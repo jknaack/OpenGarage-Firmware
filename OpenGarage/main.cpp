@@ -781,9 +781,41 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 				   (Payload=="open" && door_status == OG_DOOR_OPEN) ){
 			DEBUG_PRINTLN(F("Command request not valid, door already in requested state"));
 		}
+		else if(Payload.startsWith("double-click:")) {
+			String payload_time = Payload.substring(13); // drop the double-click: from the string, and take the rest
+			
+			if(payload_time.length() == 0) {
+				uint ival = payload_time.toInt();
+				if(ival > 0) {
+					if(!og.options[OPTION_ALM].ival) {
+						// if alarm is not enabled, trigger relay right away
+						og.double_click_relay(ival);
+					} else if(og.options[OPTION_AOO].ival && door_status == OG_DOOR_CLOSED) {
+						// if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
+						og.double_click_relay(ival);
+					} else {
+						// else, set alarm
+						og.set_alarm(0, 1);
+					}
+				}
+				else{
+					DEBUG_PRINT(F("MQTT command double-click data was invalid:"));
+					DEBUG_PRINTLN(Payload);
+				}
+			}
+			else{
+	 		    DEBUG_PRINT(F("MQTT command double-click requires data, but none was provided:"));
+				DEBUG_PRINTLN(Payload);
+			}
+		}
 		else {
 		  DEBUG_PRINT(F("Unrecognized MQTT data/command:"));
+		  DEBUG_PRINTLN(Payload);
 		}
+	}
+	else {
+		DEBUG_PRINT(F("Unrecognized MQTT data/command:"));
+		DEBUG_PRINTLN(Payload);
 	}
 }
 
