@@ -25,6 +25,7 @@
 byte  OpenGarage::state = OG_STATE_INITIAL;
 File  OpenGarage::log_file;
 byte  OpenGarage::alarm = 0;
+byte  OpenGarage::double_click_alarm_delay = 0;
 byte  OpenGarage::led_reverse = 0;
 Ticker ud_ticker;
 

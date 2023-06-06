@@ -60,7 +60,7 @@ static uint distance = 0;
 static byte sn2_value = 0;
 static float tempC = 0;
 static float humid = 0;
-static byte door_status = 0; //0: closed, 1: open
+static byte door_status = 0; //OG_DOOR_CLOSED, OG_DOOR_OPEN
 static int vehicle_status = OG_VEH_ABSENT;
 static uint led_blink_ms = LED_FAST_BLINK;
 static ulong justopen_timestamp = 0;
@@ -403,14 +403,14 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 		DEBUG_PRINTLN(F("Received button request (click, close, or open)"));
 		otf_send_result(res, HTML_SUCCESS, nullptr);
 		//1 is open
-		if ((close && door_status) ||
-				(open && !door_status) ||
+		if ((close && door_status == OG_DOOR_OPEN) ||
+				(open && door_status == OG_DOOR_CLOSED) ||
 				(click)) {
 			DEBUG_PRINTLN(F("Valid command recieved based on door status"));
 			if(!og.options[OPTION_ALM].ival) {
 				// if alarm is not enabled, trigger relay right away
 				og.click_relay();
-			} else if(og.options[OPTION_AOO].ival && !door_status) {
+			} else if(og.options[OPTION_AOO].ival && door_status == OG_DOOR_CLOSED) {
 				// if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
 				og.click_relay();
 			} else {
@@ -427,7 +427,33 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 	} else if(req.getQueryParameter("apmode") != NULL) {
 		otf_send_result(res, HTML_SUCCESS, nullptr);
 		og.reset_to_ap();
-	} else {
+	} else if(req.getQueryParameter("double-click") != NULL) {
+		bool double_click_time = req.getQueryParameter("");	
+		char *sval = req.getQueryParameter("double-click-delay");
+		if(sval != NULL) {
+			uint ival = String(sval).toInt();
+			if(ival > 0) {
+				otf_send_result(res, HTML_SUCCESS, nullptr);
+				if(!og.options[OPTION_ALM].ival) {
+					// if alarm is not enabled, trigger relay right away
+					og.double_click_relay(ival);
+				} else if(og.options[OPTION_AOO].ival && door_status == OG_DOOR_CLOSED) {
+					// if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
+					og.double_click_relay(ival);
+				} else {
+					// else, set alarm
+					og.set_alarm(0, 1);
+				}
+			}
+			else{
+				otf_send_result(res, HTML_DATA_OUTOFBOUND, "double-click-delay");
+			}
+		}
+		else{
+			otf_send_result(res, HTML_NOT_PERMITTED, nullptr);
+		}
+	}
+	else {
 		otf_send_result(res, HTML_NOT_PERMITTED, nullptr);
 	}
 
@@ -725,7 +751,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 		if(!og.options[OPTION_ALM].ival) {
 			// if alarm is not enabled, trigger relay right away
 			og.click_relay();
-		} else if(og.options[OPTION_AOO].ival && !door_status) {
+		} else if(og.options[OPTION_AOO].ival && door_status == OG_DOOR_CLOSED) {
 			// if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
 			og.click_relay();
 		} else {
@@ -737,19 +763,22 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 	if (Topic==(mqtt_topic+"/IN/STATE")){
 		DEBUG_PRINT(F("MQTT IN Message detected, check data for action, Data:"));
 		DEBUG_PRINTLN(Payload);
-		if ( (Payload == "close" && door_status) || (Payload == "open" && !door_status) || Payload == "click") {
+		if ( (Payload == "close" && door_status == OG_DOOR_OPEN) ||
+			 (Payload == "open" && door_status == OG_DOOR_CLOSED) ||
+			  Payload == "click") {
 			DEBUG_PRINTLN(F("Command is valid based on existing state, trigger change"));
 			if(!og.options[OPTION_ALM].ival) {
 				// if alarm is not enabled, trigger relay right away
 				og.click_relay();
-			} else if(og.options[OPTION_AOO].ival && !door_status) {
+			} else if(og.options[OPTION_AOO].ival && door_status == OG_DOOR_CLOSED) {
 				// if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
 				og.click_relay();
 			} else {
 				// else, set alarm
 				og.set_alarm();
 			}
-		}else if ( (Payload=="close" && !door_status) || (Payload=="open" && door_status) ){
+		}else if ( (Payload=="close" && door_status == OG_DOOR_CLOSED) ||
+				   (Payload=="open" && door_status == OG_DOOR_OPEN) ){
 			DEBUG_PRINTLN(F("Command request not valid, door already in requested state"));
 		}
 		else {
@@ -1182,7 +1211,7 @@ void check_status() {
 		//Upon change
 		if(event == DOOR_STATUS_JUST_OPENED || event == DOOR_STATUS_JUST_CLOSED) {
 			// write log record
-			DEBUG_PRINTLN(" Update Local Log"); 
+			DEBUG_PRINTLN("Update Local Log"); 
 			LogStruct l;
 			l.tstamp = curr_utc_time;
 			l.status = door_status;
@@ -1198,9 +1227,9 @@ void check_status() {
 		#if 0
 			DEBUG_PRINT(curr_utc_time);
 			if(event == DOOR_STATUS_REMAIN_OPEN)  {	
-				DEBUG_PRINTLN(F(" Sending State Refresh to connected systems, value: OPEN")); }
+				DEBUG_PRINTLN(F("Sending State Refresh to connected systems, value: OPEN")); }
 			else if(event == DOOR_STATUS_REMAIN_CLOSED) {	
-				DEBUG_PRINTLN(F(" Sending State Refresh to connected systems, value: CLOSED")); }
+				DEBUG_PRINTLN(F("Sending State Refresh to connected systems, value: CLOSED")); }
 #endif
 
 			//Mqtt update
@@ -1227,7 +1256,7 @@ void check_status() {
 		// Process dynamics: automation and notifications
 		// report status to Blynk
 		if(og.options[OPTION_CLD].ival==CLD_BLYNK && Blynk.connected()) {
-			DEBUG_PRINTLN(F(" Update Blynk (State Refresh)"));
+			DEBUG_PRINTLN(F("Update Blynk (State Refresh)"));
 			
 			static uint old_distance = 0;
 			static byte old_door_status = 0xff, old_vehicle_status = 0xff;
@@ -1315,7 +1344,14 @@ void process_alarm() {
 		og.alarm--;
 		if(og.alarm==0) {
 			og.play_note(0);
-			og.click_relay();
+			if(og.double_click_alarm_delay!=0){
+				uint double_click_delay = og.double_click_alarm_delay;
+				og.reset_double_click_alarm_delay();
+				og.double_click_relay(double_click_delay);
+			}
+			else{
+				og.click_relay();
+			}
 		}
 	}
 }
@@ -1518,7 +1554,7 @@ BLYNK_WRITE(BLYNK_PIN_RELAY) {
 		if(param.asInt()) {
 			if(!og.options[OPTION_ALM].ival) {
 				og.set_alarm(OG_ALM_5);
-			} else if(og.options[OPTION_AOO].ival && !door_status) {
+			} else if(og.options[OPTION_AOO].ival && door_status == OG_DOOR_CLOSED) {
 				og.click_relay();
 			} else {
 				og.set_alarm();

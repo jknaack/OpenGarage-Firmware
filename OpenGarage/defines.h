@@ -72,6 +72,10 @@
 #define OG_SFI_MEDIAN    0x00 // sensor filter: median method
 #define OG_SFI_CONSENSUS 0x01 // concensus method
 
+#define OG_DOOR_CLOSED  		(byte) 0x00
+#define OG_DOOR_OPEN    		(byte) 0x01
+#define OG_DOOR_PARTIAL_OPEN	(byte) 0x02
+
 #define OG_VEH_ABSENT   0x00
 #define OG_VEH_PRESENT  0x01
 #define OG_VEH_UNKNOWN  0x02
