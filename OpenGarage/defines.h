@@ -181,7 +181,7 @@ typedef enum {
 	OPTION_AUTH,    // Cloud authentication token
 	OPTION_BDMN,    // Cloud server (for backward compatibility, it's named bdmn)
 	OPTION_BPRT,    // Cloud port (for backward compatibility, it's named bprt)
-	OPTION_DCLK,	// Double-click mode (0: none; 1: Milliseconds; 2: Percent)
+	OPTION_DCLM,	// Double-click mode (0: none; 1: Milliseconds; 2: Percent)
 	OPTION_DCLV,	// Double-click value (ignored if mode=0)
 	OPTION_DKEY,    // device key
 	OPTION_NAME,    // device name
