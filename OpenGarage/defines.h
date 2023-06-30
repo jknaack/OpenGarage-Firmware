@@ -144,7 +144,7 @@
 #define CLD_BLYNK 1
 #define CLD_OTC   2
 
-#define DOUBLE_CLICK_MODE_NONE    0x00
+#define DOUBLE_CLICK_MODE_FIXED   0x00
 #define DOUBLE_CLICK_MODE_SECONDS 0x01
 #define DOUBLE_CLICK_MODE_PERCENT 0x02
 
@@ -181,7 +181,7 @@ typedef enum {
 	OPTION_AUTH,    // Cloud authentication token
 	OPTION_BDMN,    // Cloud server (for backward compatibility, it's named bdmn)
 	OPTION_BPRT,    // Cloud port (for backward compatibility, it's named bprt)
-	OPTION_DCLM,	// Double-click mode (0: none; 1: Milliseconds; 2: Percent)
+	OPTION_DCLM,	// Double-click mode (0: Fixed; 1: Milliseconds; 2: Percent)
 	OPTION_DCLV,	// Double-click value (ignored if mode=0)
 	OPTION_DKEY,    // device key
 	OPTION_NAME,    // device name

@@ -73,7 +73,7 @@ OptionStruct OpenGarage::options[] = {
 	{"auth", 0, 0, ""},
 	{"bdmn", 0, 0, DEFAULT_BLYNK_DMN},
 	{"bprt", DEFAULT_BLYNK_PRT,65535, ""},
-	{"dclm", DOUBLE_CLICK_MODE_NONE, 2, ""},
+	{"dclm", DOUBLE_CLICK_MODE_FIXED, 2, ""},
 	{"dclv", 0, 65535, ""},
 	{"dkey", 0, 0, DEFAULT_DKEY},
 	{"name", 0, 0, DEFAULT_NAME},

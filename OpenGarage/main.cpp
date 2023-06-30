@@ -430,22 +430,22 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 		og.reset_to_ap();
 	} else if(req.getQueryParameter("double-click") != NULL) {
 		uint ival = 0;
-		if(og.options[OPTION_DCLM].ival == DOUBLE_CLICK_MODE_NONE){
+		if(og.options[OPTION_DCLM].ival == DOUBLE_CLICK_MODE_FIXED){
 			ival = og.options[OPTION_DCLV].ival;
 		}
 		else if(og.options[OPTION_DCLM].ival == DOUBLE_CLICK_MODE_SECONDS){
-			char *sval = req.getQueryParameter("double-click-delay");
+			char *sval = req.getQueryParameter("double-click");
 			if(sval != NULL) {
 				ival = String(sval).toInt();
 			}
 		}
 		else if(og.options[OPTION_DCLM].ival == DOUBLE_CLICK_MODE_PERCENT) {
-			char *sval = req.getQueryParameter("double-click-delay");
+			char *sval = req.getQueryParameter("double-click");
 			if(sval != NULL) {
 				ival = String(sval).toInt();
 			}
 			if(ival == 0 || ival > 99){
-				otf_send_result(res, HTML_DATA_OUTOFBOUND, "double-click-delay");
+				otf_send_result(res, HTML_DATA_OUTOFBOUND, "double-click");
 				ival = 0;
 			}
 			else{

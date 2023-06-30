@@ -76,7 +76,7 @@ public:
 	}
 	static void double_click_relay(uint double_click_delay) {
 		click_relay();
-		delay(double_click_delay);
+		delay(double_click_delay - options[OPTION_CDT].ival);
 		click_relay();
 	}
 	static int find_option(String name);

@@ -111,6 +111,14 @@
 <input type='radio' name='rd_to' id='to_cap' value=1><label for='to_cap'>Cap</label>
 </fieldset>
 </td></tr>
+<tr><td><b>Door Open Speed (ms):</b><br><small>Used for Double-Click Percent estimation</small></td><td><input type='text' size=3 maxlength=5 id='ospd' data-mini='true' value=0 ></td></tr>
+<tr><td><b>Double-Click Mode:</b></td><td>
+<select name='dclm' id='dclm' data-mini='true'>
+<option value=0>Fixed</option>
+<option value=1>Seconds</option>
+<option value=2>Percent</option>
+</select></td></tr>
+<tr><td><b>Double-Click Time (ms):</b><br><small>Only used if Mode=Fixed</small></td><td><input type='text' size=3 maxlength=5 id='dclv' data-mini='true' value=0 ></td></tr>
 <tr><td><b>HTTP Port:</b></td><td><input type='text' size=5 maxlength=5 id='htp' value=0 data-mini='true'></td></tr>
 <tr><td><b>Host Name:</b></td><td><input type='text' size=15 maxlength=32 id='host' data-mini='true' placeholder='(optional)'></td></tr>
 <tr><td><b>NTP Server:</b></td><td><input type='text' size=15 maxlength=64 id='ntp1' data-mini='true' placeholder='(optional)'></td></tr>
@@ -195,7 +203,7 @@ e.preventDefault();
 if(confirm('Submit changes?')) {
 comm='co?dkey='+encodeURIComponent($('#dkey').val());
 bc('sn1');bc('sn2');bc('sno');bc('dth');bc('vth');bc('riv');bc('bas');bc('alm');
-bc('lsz');bc('tsn');bc('htp');bc('cdt');bc('dri');bc('ati');bc('atib');
+bc('lsz');bc('tsn');bc('htp');bc('cdt');bc('dri');bc('ati');bc('atib');bc('ospd');bc('dclm');bc('dclv');
 comm+='&aoo='+($('#aoo').is(':checked')?1:0);
 comm+='&sto='+eval_cb('#to_cap');
 comm+='&sfi='+eval_cb('#sf_con');
@@ -250,6 +258,7 @@ $('#tsn').val(jd.tsn).selectmenu('refresh');
 $('#sn1').val(jd.sn1).selectmenu('refresh');
 $('#sn2').val(jd.sn2).selectmenu('refresh');
 $('#sno').val(jd.sno).selectmenu('refresh');
+$('#dclm').val(jd.dclm).selectmenu('refresh');
 update_sno();
 $('#dth').val(jd.dth);
 $('#vth').val(jd.vth);
@@ -258,6 +267,8 @@ $('#bas').val(jd.bas);
 $('#htp').val(jd.htp);
 $('#cdt').val(jd.cdt);
 $('#dri').val(jd.dri);
+$('#ospd').val(jd.ospd);
+$('#dclv').val(jd.dclv);
 if(jd.sto) cbt('to_cap');
 else cbt('to_ignore');
 if(jd.sfi) cbt('sf_con');
