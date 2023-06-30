@@ -144,9 +144,9 @@
 #define CLD_BLYNK 1
 #define CLD_OTC   2
 
-#define DOUBLE_CLICK_NONE		0x00
-#define DOUBLE_CLICK_SECONDS	0x01
-#define DOUBLE_CLICK_PERCENT	0x02
+#define DOUBLE_CLICK_MODE_NONE    0x00
+#define DOUBLE_CLICK_MODE_SECONDS 0x01
+#define DOUBLE_CLICK_MODE_PERCENT 0x02
 
 typedef enum {
 	OPTION_FWV = 0, // firmware version
@@ -155,6 +155,7 @@ typedef enum {
 	OPTION_SNO,     // sensor logic
 	OPTION_DTH,     // distance threshold for door
 	OPTION_VTH,     // distance threshold for vehicle
+	OPTION_OSPD,	// Garage door open speed in milliseconds
 	OPTION_RIV,     // status check interval
 	OPTION_ALM,     // alarm mode
 	OPTION_AOO,     // no alarm on opening
@@ -180,9 +181,8 @@ typedef enum {
 	OPTION_AUTH,    // Cloud authentication token
 	OPTION_BDMN,    // Cloud server (for backward compatibility, it's named bdmn)
 	OPTION_BPRT,    // Cloud port (for backward compatibility, it's named bprt)
-	OPTION_DCLK,	// Double-click style (0: none; 1: Milliseconds; 2: Percent)
-	OPTION_DCLV,	// Double-click value (ignored if style=0)
-	OPTION_OSPD,	// Garage door open speed in milliseconds
+	OPTION_DCLK,	// Double-click mode (0: none; 1: Milliseconds; 2: Percent)
+	OPTION_DCLV,	// Double-click value (ignored if mode=0)
 	OPTION_DKEY,    // device key
 	OPTION_NAME,    // device name
 	OPTION_IFTT,    // IFTTT token

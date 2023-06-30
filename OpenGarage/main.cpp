@@ -60,7 +60,7 @@ static uint distance = 0;
 static byte sn2_value = 0;
 static float tempC = 0;
 static float humid = 0;
-static byte door_status = 0; //OG_DOOR_CLOSED, OG_DOOR_OPEN
+static byte door_status = OG_DOOR_CLOSED; //OG_DOOR_CLOSED=0, OG_DOOR_OPEN=1
 static int vehicle_status = OG_VEH_ABSENT;
 static uint led_blink_ms = LED_FAST_BLINK;
 static ulong justopen_timestamp = 0;
@@ -429,34 +429,34 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 		otf_send_result(res, HTML_SUCCESS, nullptr);
 		og.reset_to_ap();
 	} else if(req.getQueryParameter("double-click") != NULL) {
-		uint ival = -1;
-		if(og.options[OPTION_DCLK].ival == DOUBLE_CLICK_NONE){
+		uint ival = 0;
+		if(og.options[OPTION_DCLK].ival == DOUBLE_CLICK_MODE_NONE){
 			ival = og.options[OPTION_DCLV].ival;
 		}
-		else if(og.options[OPTION_DCLK].ival == DOUBLE_CLICK_SECONDS){
+		else if(og.options[OPTION_DCLK].ival == DOUBLE_CLICK_MODE_SECONDS){
 			char *sval = req.getQueryParameter("double-click-delay");
 			if(sval != NULL) {
 				ival = String(sval).toInt();
 			}
 		}
-		else if(og.options[OPTION_DCLK].ival == DOUBLE_CLICK_PERCENT) {
+		else if(og.options[OPTION_DCLK].ival == DOUBLE_CLICK_MODE_PERCENT) {
 			char *sval = req.getQueryParameter("double-click-delay");
 			if(sval != NULL) {
 				ival = String(sval).toInt();
 			}
-			if(ival < 1 || ival > 99){
+			if(ival == 0 || ival > 99){
 				otf_send_result(res, HTML_DATA_OUTOFBOUND, "double-click-delay");
 				ival = 0;
 			}
 			else{
 				// convert ival percent to a time in milliseconds
-				ival = (ival * og.options[OPTION_OSPD].ival) / 100;
+				ival = (uint)((ival * og.options[OPTION_OSPD].ival) / 100.0);
 			}
 		}
 		else{
 				otf_send_result(res, HTML_NOT_PERMITTED, "double-click");
 				ival = 0;
-		}		
+		}
 		if(ival > 0){
 			otf_send_result(res, HTML_SUCCESS, nullptr);
 			if(!og.options[OPTION_ALM].ival) {
@@ -477,7 +477,6 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 	else {
 		otf_send_result(res, HTML_NOT_PERMITTED, nullptr);
 	}
-
 }
 
 void on_sta_change_controller(const OTF::Request &req, OTF::Response &res) {
@@ -785,8 +784,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 		DEBUG_PRINT(F("MQTT IN Message detected, check data for action, Data:"));
 		DEBUG_PRINTLN(Payload);
 		if ( (Payload == "close" && door_status == OG_DOOR_OPEN) ||
-			 (Payload == "open" && door_status == OG_DOOR_CLOSED) ||
-			  Payload == "click") {
+		     (Payload == "open" && door_status == OG_DOOR_CLOSED) ||
+		      Payload == "click") {
 			DEBUG_PRINTLN(F("Command is valid based on existing state, trigger change"));
 			if(!og.options[OPTION_ALM].ival) {
 				// if alarm is not enabled, trigger relay right away
