@@ -108,8 +108,8 @@
 #define OG_STATE_WAIT_RESTART   4
 #define OG_STATE_RESET          9
 
-#define OG_LIGHT_BLINK_FOREVER	0
-#define OG_LIGHT_BLINK_MAX		99	// limited by rcnt to 99
+#define OG_LIGHT_BLINK_FOREVER  0
+#define OG_LIGHT_BLINK_MAX      99	// limited by rcnt to 99
 
 #define CLOUD_NONE  0
 #define CLOUD_BLYNK 1
@@ -164,7 +164,7 @@ typedef enum {
 	OPTION_ATIB,    // automation interval B (in hours)
 	OPTION_ATOB,    // automation options B
 	OPTION_NOTO,    // notification options
-	OPTION_BAS,		// blink count before turning the light off (0 means infinity)
+	OPTION_BAS,     // blink count before turning the light off (0 means infinity)
 	OPTION_USI,     // use static IP
 	OPTION_SSID,    // wifi ssid
 	OPTION_PASS,    // wifi password
