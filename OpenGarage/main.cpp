@@ -72,6 +72,7 @@ static byte door_status_hist = 0;
 static ulong curr_utc_time = 0;
 static ulong curr_utc_hour= 0;
 static HTTPClient http;
+static bool light_blink_enabled = true;
 
 void do_setup();
 
@@ -1193,8 +1194,10 @@ void check_status() {
 	static ulong checkstatus_timeout = 0;
 	static ulong checkstatus_report_timeout = 0; 
 	if((curr_utc_time > checkstatus_timeout) || (checkstatus_timeout == 0))  { //also check on first boot
-		og.set_led(HIGH);
-		aux_ticker.once_ms(25, og.set_led, (byte)LOW);
+		if(light_blink_enabled) {
+			og.set_led(HIGH);
+			aux_ticker.once_ms(25, og.set_led, (byte)LOW);
+		}
 		
 		// Read SN1 -- ultrasonic sensor
 		uint dth = og.options[OPTION_DTH].ival;
@@ -1246,7 +1249,12 @@ void check_status() {
 		
 		// get temperature readings
 		og.read_TH_sensor(tempC, humid);
-		read_cnt = (read_cnt+1)%100;    
+		
+		read_cnt = (read_cnt+1)%100;
+
+		 // once the light is disabled, quick blinking until a restart or a reset to 0.
+		byte blink_limit = og.options[OPTION_BAS].ival;
+		light_blink_enabled = blink_limit == OG_LIGHT_BLINK_FOREVER || (light_blink_enabled && read_cnt <= blink_limit);
 		
 		if (checkstatus_timeout == 0){
 			DEBUG_PRINTLN(F("First time checking status don't trigger a status change, set full history to current value"));
