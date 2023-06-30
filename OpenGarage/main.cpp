@@ -428,29 +428,49 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 		otf_send_result(res, HTML_SUCCESS, nullptr);
 		og.reset_to_ap();
 	} else if(req.getQueryParameter("double-click") != NULL) {
-		bool double_click_time = req.getQueryParameter("");	
-		char *sval = req.getQueryParameter("double-click-delay");
-		if(sval != NULL) {
-			uint ival = String(sval).toInt();
-			if(ival > 0) {
-				otf_send_result(res, HTML_SUCCESS, nullptr);
-				if(!og.options[OPTION_ALM].ival) {
-					// if alarm is not enabled, trigger relay right away
-					og.double_click_relay(ival);
-				} else if(og.options[OPTION_AOO].ival && door_status == OG_DOOR_CLOSED) {
-					// if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
-					og.double_click_relay(ival);
-				} else {
-					// else, set alarm
-					og.set_alarm(0, 1);
-				}
+		uint ival = -1;
+		if(og.options[OPTION_DCLK].ival == DOUBLE_CLICK_NONE){
+			ival = og.options[OPTION_DCLV].ival;
+		}
+		else if(og.options[OPTION_DCLK].ival == DOUBLE_CLICK_SECONDS){
+			char *sval = req.getQueryParameter("double-click-delay");
+			if(sval != NULL) {
+				ival = String(sval).toInt();
+			}
+		}
+		else if(og.options[OPTION_DCLK].ival == DOUBLE_CLICK_PERCENT) {
+			char *sval = req.getQueryParameter("double-click-delay");
+			if(sval != NULL) {
+				ival = String(sval).toInt();
+			}
+			if(ival < 1 || ival > 99){
+				otf_send_result(res, HTML_DATA_OUTOFBOUND, "double-click-delay");
+				ival = 0;
 			}
 			else{
-				otf_send_result(res, HTML_DATA_OUTOFBOUND, "double-click-delay");
+				// convert ival percent to a time in milliseconds
+				ival = (ival * og.options[OPTION_OSPD].ival) / 100;
 			}
 		}
 		else{
-			otf_send_result(res, HTML_NOT_PERMITTED, nullptr);
+				otf_send_result(res, HTML_NOT_PERMITTED, "double-click");
+				ival = 0;
+		}		
+		if(ival > 0){
+			otf_send_result(res, HTML_SUCCESS, nullptr);
+			if(!og.options[OPTION_ALM].ival) {
+				// if alarm is not enabled, trigger relay right away
+				og.double_click_relay(ival);
+			} else if(og.options[OPTION_AOO].ival && door_status == OG_DOOR_CLOSED) {
+				// if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
+				og.double_click_relay(ival);
+			} else {
+				// else, set alarm
+				og.set_alarm(0, 1);
+			}
+		}
+		else if(ival == 0){
+			otf_send_result(res, HTML_DATA_OUTOFBOUND, "double-click-delay");
 		}
 	}
 	else {
@@ -781,7 +801,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 				   (Payload=="open" && door_status == OG_DOOR_OPEN) ){
 			DEBUG_PRINTLN(F("Command request not valid, door already in requested state"));
 		}
-		else if(Payload.startsWith("double-click:")) {
+		else if(Payload.startsWith("double-click")) {
+			// TODO: make sure this works if we just say "double-click"
 			String payload_time = Payload.substring(13); // drop the double-click: from the string, and take the rest
 			
 			if(payload_time.length() == 0) {

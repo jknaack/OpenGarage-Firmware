@@ -141,6 +141,10 @@
 #define CLD_BLYNK 1
 #define CLD_OTC   2
 
+#define DOUBLE_CLICK_NONE		0x00
+#define DOUBLE_CLICK_SECONDS	0x01
+#define DOUBLE_CLICK_PERCENT	0x02
+
 typedef enum {
 	OPTION_FWV = 0, // firmware version
 	OPTION_SN1,     // distance sensor mounting method
@@ -168,10 +172,13 @@ typedef enum {
 	OPTION_USI,     // use static IP
 	OPTION_SSID,    // wifi ssid
 	OPTION_PASS,    // wifi password
-	OPTION_CLD,     // Cloud connection (0: no; 1: Blynk: 2: OTC)
+	OPTION_CLD,     // Cloud connection (0: no; 1: Blynk; 2: OTC)
 	OPTION_AUTH,    // Cloud authentication token
 	OPTION_BDMN,    // Cloud server (for backward compatibility, it's named bdmn)
 	OPTION_BPRT,    // Cloud port (for backward compatibility, it's named bprt)
+	OPTION_DCLK,	// Double-click style (0: none; 1: Milliseconds; 2: Percent)
+	OPTION_DCLV,	// Double-click value (ignored if style=0)
+	OPTION_OSPD,	// Garage door open speed in milliseconds
 	OPTION_DKEY,    // device key
 	OPTION_NAME,    // device name
 	OPTION_IFTT,    // IFTTT token
