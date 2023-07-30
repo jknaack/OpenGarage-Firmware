@@ -1114,7 +1114,7 @@ void check_status() {
 	if((curr_utc_time > checkstatus_timeout) || (checkstatus_timeout == 0))  { //also check on first boot
 		if(light_blink_enabled) {
 			og.set_led(HIGH);
-			aux_ticker.once_ms(25, og.set_led, (byte)LOW);
+			aux_ticker.once_ms(OG_LIGHT_BLINK_TIME, og.set_led, (byte)LOW);
 		}
 		
 		// Read SN1 -- ultrasonic sensor
@@ -1170,9 +1170,16 @@ void check_status() {
 		
 		read_cnt = (read_cnt+1)%100;
 
-		 // once the light is disabled, quick blinking until a restart or a reset to 0.
+		// once the light is disabled, quit blinking until a restart or a reset to 0.
 		byte blink_limit = og.options[OPTION_BAS].ival;
+		bool current_light_blink_enabled = light_blink_enabled;
 		light_blink_enabled = blink_limit == OG_LIGHT_BLINK_FOREVER || (light_blink_enabled && read_cnt <= blink_limit);
+		
+		// do a long blink to notify that we are turning the light off
+		if(current_light_blink_enabled && !light_blink_enabled){
+			og.set_led(HIGH);
+			aux_ticker.once_ms(OG_LIGHT_BLINK_NOTIFY, og.set_led, (byte)LOW);
+		}
 		
 		if (checkstatus_timeout == 0){
 			DEBUG_PRINTLN(F("First time checking status don't trigger a status change, set full history to current value"));

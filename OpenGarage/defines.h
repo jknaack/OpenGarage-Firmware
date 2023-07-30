@@ -110,6 +110,8 @@
 
 #define OG_LIGHT_BLINK_FOREVER  0
 #define OG_LIGHT_BLINK_MAX      99	// limited by rcnt to 99
+#define OG_LIGHT_BLINK_TIME		25
+#define OG_LIGHT_BLINK_NOTIFY	2000 // specifies how long the last blink should last before blinking turns off
 
 #define CLOUD_NONE  0
 #define CLOUD_BLYNK 1
