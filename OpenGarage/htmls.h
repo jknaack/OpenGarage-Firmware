@@ -267,7 +267,7 @@ timeout:5000,
 success:function(jd){
 $('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 $('#lbl_dist').text(jd.dist +' (cm)').css('color', jd.dist==450?'red':'black');
-$('#lbl_status').text(jd.door?'OPEN':'CLOSED').css('color',jd.door?'red':'green'); 
+$('#lbl_status').text(jd.door?'OPEN':'CLOSED').css('color',jd.door?'red':'green');
 if (jd.vehicle >=2){
 $('#lbl_vstatus1').hide();
 $('#lbl_vstatus').text('');
@@ -310,10 +310,16 @@ const char sta_logs_html[] PROGMEM = R"(<head>
 </head>
 <body>
 <div data-role='page' id='page_log'>
-<div data-role='header'><h3><label id='lbl_name'></label> Log</h3></div>    
+<div data-role='header'><h3><label id='lbl_name'></label> Log</h3></div>
 <div data-role='content'>
-<p>Below are the most recent <label id='lbl_nr'></label> records</p>
-<p>Current time is <label id='lbl_time'></label></p>
+<div data-role='timegroup'>
+<table>
+<tr><td>Current Time:</td><td><strong><label id='lbl_time' /></strong></td></tr>
+<tr><td>Start Time:</td><td><strong><label id='lbl_start_time' /></strong></td></tr>
+<tr><td>Up Time:</td><td><strong><label id='lbl_up_time' /></strong></td></tr>
+</table>
+</div>
+<p>Below are the most recent <strong><label id='lbl_nr' /></strong> records</p>
 <div data-role="controlgroup" data-type="horizontal">
 <button data-theme="b" id="btn_back">Back</button>
 </div>
@@ -324,16 +330,35 @@ const char sta_logs_html[] PROGMEM = R"(<head>
 </div>
 <script>
 var curr_time = 0;
+var sdate = new Date();
 var date = new Date();
 $("#btn_back").click(function(){history.back();});
 $(document).ready(function(){
 show_log();
 setInterval(show_time, 1000);
 });
+function get_delta_time(date_now, date_future) {
+// from: https://stackoverflow.com/a/13904120
+// get total seconds between the times
+var delta = Math.abs(date_future - date_now) / 1000;
+// calculate (and subtract) whole days
+var days = Math.floor(delta / 86400);
+delta -= days * 86400;
+// calculate (and subtract) whole hours
+var hours = Math.floor(delta / 3600) % 24;
+delta -= hours * 3600;
+// calculate (and subtract) whole minutes
+var minutes = Math.floor(delta / 60) % 60;
+delta -= minutes * 60;
+// what's left is seconds
+var seconds = delta % 60;  // in theory the modulus is not required
+return days + ":" + String(hours).padStart(2, '0') + ":" + String(minutes).padStart(2, '0') + ":" + String(seconds).padStart(2, '0');
+}
 function show_time() {
 curr_time ++;
 date.setTime(curr_time*1000);
 $('#lbl_time').text(date.toLocaleString());
+$('#lbl_up_time').text(get_delta_time(date, sdate));
 }
 function show_log() {
 $.getJSON('jl', function(jd) {
@@ -343,6 +368,8 @@ $('#tab_log').find('tr:gt(0)').remove();
 var logs=jd.logs;
 logs.sort(function(a,b){return b[0]-a[0];});
 $('#lbl_nr').text(logs.length);
+sdate.setTime(jd.starttime*1000);
+$('#lbl_start_time').text(sdate.toLocaleString());
 var ldate = new Date();
 for(var i=0;i<logs.length;i++) {
 ldate.setTime(logs[i][0]*1000);
@@ -492,7 +519,7 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 <tr class='si'><td><b>DNS1:</b></td><td><input type='text' size=15 maxlength=64 id='dns1' data-mini='true'></td></tr>
 <tr><td colspan=2><input type='checkbox' id='cb_key' data-mini='true' onclick='update_ckey()'><label for='cb_key'>Change Device Key</label></td></tr>
 <tr class='ckey'><td><b>New Key:</b></td><td><input type='password' size=16 maxlength=64 id='nkey' data-mini='true'></td></tr>
-<tr class='ckey'><td><b>Confirm:</b></td><td><input type='password' size=16 maxlength=64 id='ckey' data-mini='true'></td></tr>      
+<tr class='ckey'><td><b>Confirm:</b></td><td><input type='password' size=16 maxlength=64 id='ckey' data-mini='true'></td></tr>
 </table>
 </div>
 <br />
@@ -502,7 +529,7 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 </table>
 <div data-role='controlgroup' data-type='horizontal'>
 <a href='#' data-role='button' data-inline='true' data-theme='a' id='btn_back'>Back</a>
-<a href='#' data-role='button' data-inline='true' data-theme='b' id='btn_submit'>Submit</a> 
+<a href='#' data-role='button' data-inline='true' data-theme='b' id='btn_submit'>Submit</a>
 </div>
 </div>
 <div data-role='footer' data-theme='c'>
@@ -514,7 +541,7 @@ let prev_ct=1;
 function clear_msg() {$('#msg').text('');}
 function update_sno(){
 if(parseInt($('#sn2 option:selected').val())>0){
-$('#sno').selectmenu('enable'); 
+$('#sno').selectmenu('enable');
 }else{$('#sno').selectmenu('disable');}
 }
 function update_cld(){
@@ -689,7 +716,7 @@ const char sta_update_html[] PROGMEM = R"(<head>
 <tr><td><b>Device key: </b><input type='password' name='dkey' size=16 maxlength=64 id='dkey'></td></tr>
 <tr><td><label id='msg'></label></td></tr>
 </table>
-<div data-role='controlgroup' data-type='horizontal'>    
+<div data-role='controlgroup' data-type='horizontal'>
 <a href='#' data-role='button' data-inline='true' data-theme='a' id='btn_back'>Back</a>
 <a href='#' data-role='button' data-inline='true' data-theme='b' id='btn_submit'>Submit</a>
 </div>
