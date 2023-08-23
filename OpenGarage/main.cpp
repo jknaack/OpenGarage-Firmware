@@ -1296,7 +1296,6 @@ void time_keeping() {
 		case OG_NTP_CALL_NTP: {
 			DEBUG_PRINTLN(F("Calling NTP Server"));
 			ulong gt = time(nullptr);
-			//ulong gt = TIME_SYNC_ERROR_DATE + current_millis;
 			if(gt < TIME_SYNC_ERROR_DATE){
 				DEBUG_PRINT(F("NTP Server Error: "));
 				// the result of ntp time failed, if we haven't reached the timeout window yet, wait 2 seconds, then try again, once we timeout, wait 60 seconds before trying again.
