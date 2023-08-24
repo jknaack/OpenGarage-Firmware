@@ -1254,11 +1254,11 @@ void check_status() {
 void time_keeping() {
 	static byte ntp_state = OG_NTP_CONFIGURE;
 	static ulong prev_millis = 0;
-	static ulong ntp_timeout = 0;
+	static ulong next_retry_delay = TIME_SYNC_RETRY_DELAY;
 	static ulong state_transition_time = 0;
 
 	ulong current_millis = millis();
-	ulong state_transition_delay = 0;
+	uint state_transition_delay = 0;
 
 	while(current_millis - prev_millis >= 1000) {
 		curr_utc_time ++;
@@ -1283,33 +1283,13 @@ void time_keeping() {
 				configTime(0, 0, DEFAULT_NTP1, DEFAULT_NTP2, DEFAULT_NTP3);
 			}
 			DEBUG_PRINTLN(F("NTP Configured"));
-			ntp_state = OG_NTP_UPDATE_TIME;
-			state_transition_delay = TIME_SYNC_CONFIG_DELAY;
-			break;
-		}
-		case OG_NTP_UPDATE_TIME: {
-			DEBUG_PRINTLN(F("Updating Time"));
-			ntp_timeout = current_millis + TIME_SYNC_TIMEOUT;
 			ntp_state = OG_NTP_CALL_NTP;
 			break;
 		}
 		case OG_NTP_CALL_NTP: {
 			DEBUG_PRINTLN(F("Calling NTP Server"));
 			ulong gt = time(nullptr);
-			if(gt < TIME_SYNC_ERROR_DATE){
-				DEBUG_PRINT(F("NTP Server Error: "));
-				// the result of ntp time failed, if we haven't reached the timeout window yet, wait 2 seconds, then try again, once we timeout, wait 60 seconds before trying again.
-				if(current_millis > ntp_timeout ){
-					DEBUG_PRINTLN(F("TIMEOUT"));
-					ntp_state = OG_NTP_UPDATE_TIME;
-					state_transition_delay = TIME_SYNC_TIMEOUT_DELAY;
-				} else {
-					DEBUG_PRINTLN(F("WAIT/RETRY"));
-					ntp_state = OG_NTP_CALL_NTP;
-					state_transition_delay = TIME_SYNC_RETRY_DELAY;
-				}
-			}
-			else{
+			if(gt >= TIME_SYNC_ERROR_DATE){
 				curr_utc_time = gt;
 				curr_utc_hour = (curr_utc_time % 86400)/3600;
 				DEBUG_PRINT(F("Updated time from NTP: "));
@@ -1319,10 +1299,25 @@ void time_keeping() {
 
 				prev_millis = current_millis;
 
-				// if we got a response, re-try after TIME_SYNC_REFRESH milliseconds
-				ntp_state = OG_NTP_UPDATE_TIME;
+				// if we got a valid response, refresh NTP after TIME_SYNC_REFRESH milliseconds
+				ntp_state = OG_NTP_CALL_NTP;
 				state_transition_delay = TIME_SYNC_REFRESH;
+			} else {
+				ntp_state = OG_NTP_RETRY;
 			}
+			break;
+		}
+		case OG_NTP_RETRY: {
+				// ntp time failed, so retry using a backoff strategy up to the limit; once we hit (or exceed) the limit, restart the retry cycle
+				state_transition_delay = next_retry_delay;
+				next_retry_delay *= 2;
+				if(state_transition_delay >= TIME_SYNC_REFRESH){
+					state_transition_delay = TIME_SYNC_REFRESH;
+					next_retry_delay = TIME_SYNC_RETRY_DELAY;
+				}
+				ntp_state = OG_NTP_CALL_NTP;
+				DEBUG_PRINT(F("NTP Server Error, retry in: "));
+				DEBUG_PRINTLN(state_transition_delay);
 			break;
 		}
 	}
