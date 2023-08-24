@@ -1312,7 +1312,7 @@ void time_keeping() {
 			prev_millis = millis();
 		}
 		if(!start_utc_time){
-			start_utc_time = curr_utc_time;
+			start_utc_time = curr_utc_time - millis()/1000;
 		}		
 	}
 
