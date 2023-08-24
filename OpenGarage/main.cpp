@@ -1318,9 +1318,9 @@ void time_keeping() {
 
 				prev_millis = current_millis;
 
-				if(!start_utc_time){
+				if(!start_utc_time) {
 					start_utc_time = curr_utc_time - current_millis/1000;
-				}		
+				}
 
 				// if we got a valid response, refresh NTP after TIME_SYNC_REFRESH milliseconds
 				ntp_state = OG_NTP_CALL_NTP;
