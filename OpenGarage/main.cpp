@@ -1310,10 +1310,10 @@ void time_keeping() {
 			// if we got a response, re-try after TIME_SYNC_TIMEOUT seconds
 			time_keeping_timeout = curr_utc_time + TIME_SYNC_TIMEOUT;
 			prev_millis = millis();
+			if(!start_utc_time){
+				start_utc_time = curr_utc_time - millis()/1000;
+			}		
 		}
-		if(!start_utc_time){
-			start_utc_time = curr_utc_time - millis()/1000;
-		}		
 	}
 
 	while(millis() - prev_millis >= 1000) {
