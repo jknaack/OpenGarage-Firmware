@@ -202,15 +202,12 @@ typedef enum {
 #define LED_FAST_BLINK  100
 #define LED_SLOW_BLINK  500
 
-#define OG_NTP_CONFIGURE        0            // ntp config state
-#define OG_NTP_UPDATE_TIME      1            // ntp refresh state, initializes timeout handling
-#define OG_NTP_CALL_NTP         2            // actual ntp call, including success and basic retry states
-#define TIME_SYNC_CONFIG_DELAY  0            // delay between configuring the NTP class and actually using it, may not be needed anymore, so default to zero
-#define TIME_SYNC_RETRY_DELAY   2000         // delay between failed NTP calls, hopefully due to transient/startup issues
-#define TIME_SYNC_TIMEOUT       30000        // time limit before we give up calling NTP for a while, likely due to major issues, like a network outages
-#define TIME_SYNC_TIMEOUT_DELAY 60000        // delay before trying to call NTP again after a major issue
-#define TIME_SYNC_REFRESH       1800000      // Issues connecting to MQTT can throw off the time function, sync more often
-#define TIME_SYNC_ERROR_DATE    1577836800UL // 2020-01-01T00:00:00Z - Arbitrary, but reasonable date to confirm NTP is working
+#define OG_NTP_CONFIGURE      0            // ntp config state
+#define OG_NTP_CALL_NTP       1            // actual ntp call state and success handling
+#define OG_NTP_RETRY          2            // retry state, in case the call fails
+#define TIME_SYNC_RETRY_DELAY 1000         // delay time between failed NTP calls, will progressively increase using a backoff strategy up to TIME_SYNC_REFRESH limit
+#define TIME_SYNC_REFRESH     1800000      // Issues connecting to MQTT can throw off the time function, sync more often
+#define TIME_SYNC_ERROR_DATE  1577836800UL // 2020-01-01T00:00:00Z - Arbitrary, but reasonable date to confirm NTP is working
 
 #define TMP_BUFFER_SIZE 100
 
