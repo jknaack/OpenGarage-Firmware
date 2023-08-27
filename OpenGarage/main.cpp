@@ -1352,55 +1352,83 @@ void check_status() {
 }
 
 void time_keeping() {
-	static bool configured = false;
+	static byte ntp_state = OG_NTP_CONFIGURE;
 	static ulong prev_millis = 0;
-	static ulong time_keeping_timeout = 0;
+	static ulong next_retry_delay = TIME_SYNC_RETRY_DELAY;
+	static ulong state_transition_time = 0;
 
-	if(!configured) {
-		if(valid_url(og.options[OPTION_NTP1].sval)) {
-			DEBUG_PRINT(F("NTP1:"));
-			DEBUG_PRINTLN(og.options[OPTION_NTP1].sval);
-			configTime(0, 0, og.options[OPTION_NTP1].sval.c_str(), DEFAULT_NTP1, DEFAULT_NTP2);
-		} else {
-			DEBUG_PRINT(F("NTP1:"));
-			DEBUG_PRINTLN(DEFAULT_NTP1);
-			configTime(0, 0, DEFAULT_NTP1, DEFAULT_NTP2, DEFAULT_NTP3);
-		}
-		configured = true;
-		delay(1000);
-	}
+	ulong current_millis = millis();
+	uint state_transition_delay = 0;
 
-	if(!curr_utc_time || (curr_utc_time > time_keeping_timeout)) {
-		ulong gt = 0;
-		ulong timeout = millis()+30000;
-		do {
-			gt = time(nullptr);
-			delay(2000);
-		} while(gt<1577836800UL && millis()<timeout);
-		if(gt<1577836800UL) {
-			// if we didn't get response, re-try after 2 seconds
-			DEBUG_PRINTLN(F("ntp invalid! re-try in 60 seconds"));
-			time_keeping_timeout = curr_utc_time + 60;
-		} else {
-			curr_utc_time = gt;
-			curr_utc_hour = (curr_utc_time % 86400)/3600;
-			DEBUG_PRINT(F("Updated time from NTP: "));
-			DEBUG_PRINT(curr_utc_time);
-			DEBUG_PRINT(" Hour: ");
-			DEBUG_PRINTLN(curr_utc_hour);
-			// if we got a response, re-try after TIME_SYNC_TIMEOUT seconds
-			time_keeping_timeout = curr_utc_time + TIME_SYNC_TIMEOUT;
-			prev_millis = millis();
-		}
-		if(!start_utc_time){
-			start_utc_time = curr_utc_time;
-		}		
-	}
-
-	while(millis() - prev_millis >= 1000) {
+	while(current_millis - prev_millis >= 1000) {
 		curr_utc_time ++;
 		curr_utc_hour = (curr_utc_time % 86400)/3600;
 		prev_millis += 1000;
+	}
+
+	if(state_transition_time > current_millis){
+		return;
+	}
+
+	state_transition_time = 0;
+
+	switch(ntp_state) {
+		case OG_NTP_CONFIGURE: {
+			DEBUG_PRINT(F("NTP1: "));
+			if(valid_url(og.options[OPTION_NTP1].sval)) {
+				DEBUG_PRINTLN(og.options[OPTION_NTP1].sval);
+				configTime(0, 0, og.options[OPTION_NTP1].sval.c_str(), DEFAULT_NTP1, DEFAULT_NTP2);
+			} else {
+				DEBUG_PRINTLN(DEFAULT_NTP1);
+				configTime(0, 0, DEFAULT_NTP1, DEFAULT_NTP2, DEFAULT_NTP3);
+			}
+			DEBUG_PRINTLN(F("NTP Configured"));
+			ntp_state = OG_NTP_CALL_NTP;
+			break;
+		}
+		case OG_NTP_CALL_NTP: {
+			DEBUG_PRINTLN(F("Calling NTP Server"));
+			ulong gt = time(nullptr);
+			if(gt >= TIME_SYNC_ERROR_DATE){
+				curr_utc_time = gt;
+				curr_utc_hour = (curr_utc_time % 86400)/3600;
+				DEBUG_PRINT(F("Updated time from NTP: "));
+				DEBUG_PRINT(curr_utc_time);
+				DEBUG_PRINT(" Hour: ");
+				DEBUG_PRINTLN(curr_utc_hour);
+
+				prev_millis = current_millis;
+
+				if(!start_utc_time) {
+					start_utc_time = curr_utc_time - current_millis/1000;
+				}
+
+				// if we got a valid response, refresh NTP after TIME_SYNC_REFRESH milliseconds
+				ntp_state = OG_NTP_CALL_NTP;
+				state_transition_delay = TIME_SYNC_REFRESH;
+			} else {
+				ntp_state = OG_NTP_RETRY;
+			}
+			break;
+		}
+		case OG_NTP_RETRY: {
+				// ntp time failed, so retry using a backoff strategy up to the limit; once we hit (or exceed) the limit, restart the retry cycle
+				state_transition_delay = next_retry_delay;
+				next_retry_delay *= 2;
+				if(state_transition_delay >= TIME_SYNC_REFRESH){
+					state_transition_delay = TIME_SYNC_REFRESH;
+					next_retry_delay = TIME_SYNC_RETRY_DELAY;
+				}
+				ntp_state = OG_NTP_CALL_NTP;
+				DEBUG_PRINT(F("NTP Server Error, retry in: "));
+				DEBUG_PRINTLN(state_transition_delay);
+			break;
+		}
+	}
+
+	if(state_transition_delay){
+		state_transition_time = current_millis + state_transition_delay;
+		state_transition_delay = 0;
 	}
 }
 

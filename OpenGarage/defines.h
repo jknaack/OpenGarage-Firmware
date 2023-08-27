@@ -33,9 +33,9 @@
 #define PIN_ECHO   14 // D5 on nodemcu
 #define PIN_LED     2
 #define PIN_RESET  16
-#define PIN_BUZZER 13
+#define PIN_BUZZER 13 // D7 on nodemcu
 #define PIN_SWITCH  4 // switch sensor: D2 on nodemcu
-#define PIN_TH      5 // temeprature sensor: D1 on nodemcu
+#define PIN_TH      5 // temperature sensor: D1 on nodemcu
 
 // Default device name
 #define DEFAULT_NAME    "My OpenGarage"
@@ -213,12 +213,17 @@ typedef enum {
 #define LED_FAST_BLINK  100
 #define LED_SLOW_BLINK  500
 
-#define TIME_SYNC_TIMEOUT 1800 //Issues connecting to MQTT can throw off the time function, sync more often
+#define OG_NTP_CONFIGURE      0            // ntp config state
+#define OG_NTP_CALL_NTP       1            // actual ntp call state and success handling
+#define OG_NTP_RETRY          2            // retry state, in case the call fails
+#define TIME_SYNC_RETRY_DELAY 1000         // delay time between failed NTP calls, will progressively increase using a backoff strategy up to TIME_SYNC_REFRESH limit
+#define TIME_SYNC_REFRESH     1800000      // Issues connecting to MQTT can throw off the time function, sync more often
+#define TIME_SYNC_ERROR_DATE  1577836800UL // 2020-01-01T00:00:00Z - Arbitrary, but reasonable date to confirm NTP is working
 
 #define TMP_BUFFER_SIZE 100
 
 /** Serial debug functions */
-//#define SERIAL_DEBUG
+#define SERIAL_DEBUG
 
 #if defined(SERIAL_DEBUG)
 	#define DEBUG_PRINT(x)   Serial.print(x)
