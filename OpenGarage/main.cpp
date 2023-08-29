@@ -824,23 +824,23 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 					}
 				}
 				else{
-					DEBUG_PRINT(F("MQTT command double-click data was invalid:"));
-					DEBUG_PRINTLN(Payload);
+					//DEBUG_PRINT(F("MQTT command double-click data was invalid"));
+					//DEBUG_PRINTLN(Payload);
 				}
 			}
 			else{
-	 		    DEBUG_PRINT(F("MQTT command double-click requires data, but none was provided:"));
-				DEBUG_PRINTLN(Payload);
+	 		    //DEBUG_PRINT(F("MQTT command double-click requires data, but none was provided"));
+				//DEBUG_PRINTLN(Payload);
 			}
 		}
 		else {
-		  DEBUG_PRINT(F("Unrecognized MQTT data/command:"));
-		  DEBUG_PRINTLN(Payload);
+		  //DEBUG_PRINT(F("Unrecognized MQTT data/command"));
+		  //DEBUG_PRINTLN(Payload);
 		}
 	}
 	else {
-		DEBUG_PRINT(F("Unrecognized MQTT data/command:"));
-		DEBUG_PRINTLN(Payload);
+		//DEBUG_PRINT(F("Unrecognized MQTT data/command"));
+		//DEBUG_PRINTLN(Payload);
 	}
 }
 
@@ -1282,7 +1282,7 @@ void check_status() {
 		//Upon change
 		if(event == DOOR_STATUS_JUST_OPENED || event == DOOR_STATUS_JUST_CLOSED) {
 			// write log record
-			DEBUG_PRINTLN("Update Local Log"); 
+			DEBUG_PRINTLN(F(" Update Local Log")); 
 			LogStruct l;
 			l.tstamp = curr_utc_time;
 			l.status = door_status;
@@ -1298,9 +1298,9 @@ void check_status() {
 		#if 0
 			DEBUG_PRINT(curr_utc_time);
 			if(event == DOOR_STATUS_REMAIN_OPEN)  {	
-				DEBUG_PRINTLN(F("Sending State Refresh to connected systems, value: OPEN")); }
+				DEBUG_PRINTLN(F(" Sending State Refresh to connected systems, value: OPEN")); }
 			else if(event == DOOR_STATUS_REMAIN_CLOSED) {	
-				DEBUG_PRINTLN(F("Sending State Refresh to connected systems, value: CLOSED")); }
+				DEBUG_PRINTLN(F(" Sending State Refresh to connected systems, value: CLOSED")); }
 #endif
 
 			//Mqtt update
@@ -1327,7 +1327,7 @@ void check_status() {
 		// Process dynamics: automation and notifications
 		// report status to Blynk
 		if(og.options[OPTION_CLD].ival==CLD_BLYNK && Blynk.connected()) {
-			DEBUG_PRINTLN(F("Update Blynk (State Refresh)"));
+			DEBUG_PRINTLN(F(" Update Blynk (State Refresh)"));
 			
 			static uint old_distance = 0;
 			static byte old_door_status = 0xff, old_vehicle_status = 0xff;
