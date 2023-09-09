@@ -1275,9 +1275,9 @@ void time_keeping() {
 	static ulong prev_millis = 0;
 	static ulong next_retry_delay = TIME_SYNC_RETRY_DELAY;
 	static ulong state_transition_time = 0;
+	static uint state_transition_delay = 0;
 
 	ulong current_millis = millis();
-	uint state_transition_delay = 0;
 
 	while(current_millis - prev_millis >= 1000) {
 		curr_utc_time ++;
@@ -1285,24 +1285,32 @@ void time_keeping() {
 		prev_millis += 1000;
 	}
 
-	if(state_transition_time > current_millis){
+	if(current_millis - state_transition_time < state_transition_delay){
 		return;
 	}
 
-	state_transition_time = 0;
+	state_transition_time = current_millis;
+	state_transition_delay = 0;
 
 	switch(ntp_state) {
 		case OG_NTP_CONFIGURE: {
+			String ntp_server = og.options[OPTION_NTP1].sval;
+			if(ntp_server == F("0.0.0.0")){
+				DEBUG_PRINTLN("Skipping NTP Configuration");
+				state_transition_delay = TIME_SYNC_REFRESH;
+				break;
+			}
 			DEBUG_PRINT(F("NTP1: "));
-			if(valid_url(og.options[OPTION_NTP1].sval)) {
-				DEBUG_PRINTLN(og.options[OPTION_NTP1].sval);
-				configTime(0, 0, og.options[OPTION_NTP1].sval.c_str(), DEFAULT_NTP1, DEFAULT_NTP2);
+			if(valid_url(ntp_server)) {
+				DEBUG_PRINTLN(ntp_server);
+				configTime(0, 0, ntp_server.c_str(), DEFAULT_NTP1, DEFAULT_NTP2);
 			} else {
 				DEBUG_PRINTLN(DEFAULT_NTP1);
 				configTime(0, 0, DEFAULT_NTP1, DEFAULT_NTP2, DEFAULT_NTP3);
 			}
 			DEBUG_PRINTLN(F("NTP Configured"));
 			ntp_state = OG_NTP_CALL_NTP;
+			state_transition_delay = TIME_SYNC_RETRY_DELAY;
 			break;
 		}
 		case OG_NTP_CALL_NTP: {
@@ -1343,11 +1351,6 @@ void time_keeping() {
 				DEBUG_PRINTLN(state_transition_delay);
 			break;
 		}
-	}
-
-	if(state_transition_delay){
-		state_transition_time = current_millis + state_transition_delay;
-		state_transition_delay = 0;
 	}
 }
 
