@@ -28,11 +28,11 @@
 
 /** GPIO pins */
 #define PIN_RELAY  15 // D8 on nodemcu
-#define PIN_BUTTON  0
+#define PIN_BUTTON  0 // D3 on nodemcu
 #define PIN_TRIG   12 // D6 on nodemcu
 #define PIN_ECHO   14 // D5 on nodemcu
-#define PIN_LED     2
-#define PIN_RESET  16
+#define PIN_LED     2 // D4 on nodemcu
+#define PIN_RESET  16 // D0 on nodemcu
 #define PIN_BUZZER 13 // D7 on nodemcu
 #define PIN_SWITCH  4 // switch sensor: D2 on nodemcu
 #define PIN_TH      5 // temperature sensor: D1 on nodemcu
