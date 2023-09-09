@@ -199,7 +199,7 @@ typedef enum {
 #define OG_NTP_CONFIGURE        0            // ntp config state
 #define OG_NTP_UPDATE_TIME      1            // ntp refresh state, initializes timeout handling
 #define OG_NTP_CALL_NTP         2            // actual ntp call, including success and basic retry states
-#define TIME_SYNC_CONFIG_DELAY  0            // delay between configuring the NTP class and actually using it, may not be needed anymore, so default to zero
+#define TIME_SYNC_CONFIG_DELAY  1000         // delay between configuring the NTP class and actually using it
 #define TIME_SYNC_RETRY_DELAY   2000         // delay between failed NTP calls, hopefully due to transient/startup issues
 #define TIME_SYNC_TIMEOUT       30000        // time limit before we give up calling NTP for a while, likely due to major issues, like a network outages
 #define TIME_SYNC_TIMEOUT_DELAY 60000        // delay before trying to call NTP again after a major issue

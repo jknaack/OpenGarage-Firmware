@@ -1256,9 +1256,9 @@ void time_keeping() {
 	static ulong prev_millis = 0;
 	static ulong ntp_timeout = 0;
 	static ulong state_transition_time = 0;
+	static uint state_transition_delay = 0;
 
 	ulong current_millis = millis();
-	ulong state_transition_delay = 0;
 
 	while(current_millis - prev_millis >= 1000) {
 		curr_utc_time ++;
@@ -1266,11 +1266,12 @@ void time_keeping() {
 		prev_millis += 1000;
 	}
 
-	if(state_transition_time > current_millis){
+	if(current_millis - state_transition_time < state_transition_delay){
 		return;
 	}
 
-	state_transition_time = 0;
+	state_transition_time = current_millis;
+	state_transition_delay = 0;
 
 	switch(ntp_state) {
 		case OG_NTP_CONFIGURE: {
@@ -1325,11 +1326,6 @@ void time_keeping() {
 			}
 			break;
 		}
-	}
-
-	if(state_transition_delay){
-		state_transition_time = current_millis + state_transition_delay;
-		state_transition_delay = 0;
 	}
 }
 
