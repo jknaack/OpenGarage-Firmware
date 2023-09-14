@@ -166,13 +166,51 @@ xhr.send(fd);
 </script>
 </body>
 )";
-const char sta_home_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'><script src='//code.jquery.com/jquery-1.9.1.min.js' type='text/javascript'></script><script src='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js' type='text/javascript'></script></head>
+const char sta_home_html[] PROGMEM = R"#(<head><title>OpenGarage</title><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'><script src='//code.jquery.com/jquery-1.9.1.min.js' type='text/javascript'></script><script src='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js' type='text/javascript'></script>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 190 120'%3e%3crect x='113' y='5' width='70' height='15' rx='5'/%3e%3crect x='169' y='5' width='15' height='110' rx='5'/%3e%3cpath d='M26.706 37.724c-3.539 1.92-5.46 4.868-13.5 20.877L4.573 75.569l-.221 12.172c-.296 15.27-.296 15.341 8.118 16.006l5.681.442.882 2.656c1.328 4.058 2.805 5.83 6.417 8.042 6.862 3.984 15.861 1.548 19.182-5.166.81-1.772 1.696-3.76 1.92-4.498.367-1.182 2.282-1.252 26.26-1.252 23.972 0 25.892.07 26.26 1.327 2.656 8.996 10.107 13.349 18.516 10.839 4.425-1.323 7.816-4.72 9.144-9.219l.889-2.947 7.447-.077c4.135 0 8.634-.367 10.034-.883 3.984-1.404 4.501-3.174 4.205-14.903-.221-11.211-.957-13.796-4.205-15.492-1.033-.514-8.704-2.507-16.963-4.351-8.337-1.92-15.199-3.689-15.344-3.984-.078-.296-3.616-5.829-7.746-12.32-4.796-7.449-8.486-12.393-10.032-13.424l-2.509-1.697H60.344c-22.057.072-32.607.295-33.638.884zm29.136 17.189v9.959H38.506h-17.26l4.057-8.704c2.216-4.723 4.723-9.224 5.531-9.96 1.328-1.108 3.174-1.256 13.28-1.256h11.728v9.961zM89.628 46.8c1.181.956 4.352 5.456 7.008 9.956l4.868 8.116H83.137h-18.44v-9.959-9.961h11.36c10.993 0 11.432.077 13.571 1.848zM36.146 95.929c2.141.957 4.205 4.276 4.205 6.714 0 2.8-2.581 6.266-5.383 7.152-6.271 2.068-12.246-4.72-9.295-10.473 1.993-3.838 6.417-5.24 10.473-3.393zm82.474 1.325c1.621 1.699 2.142 2.88 2.142 5.164 0 8.263-10.845 10.695-14.383 3.249-1.554-3.174-.961-5.61 1.841-8.413 2.949-3.024 7.377-3.024 10.4 0z'/%3e%3c/svg%3e" />
+</head>
 <body>
-<style> table, th, td {border: 0px solid black;padding: 6px; border-collapse: collapse; }</style>
+<style> table, th, td {border: 0px solid black;padding: 6px; border-collapse: collapse; } svg {height:78}</style>
 <div data-role='page' id='page_home'><div data-role='header'><h3 id='head_name'>OG</h3></div>
 <div data-role='content'><div data-role='fieldcontain'>
 <table><tr><td><b>Door:<br></td><td><label id='lbl_status'>-</label></td>
-<td rowspan='2'><img id='pic' src='' style='width:112px;height:64px;'></td>
+<td rowspan='2'>
+<svg xmlns="http://www.w3.org/2000/svg">
+<defs>
+<svg id="svg_f_garage" viewBox="0 0 100 100" fill="red">
+<g>
+<rect y="20" width="50" height="10" transform="skewY(-20)"/>
+<rect x="50" y="6.5" width="50" height="10" transform="scale(1,-1) skewY(-20)"/>
+<rect width="45" height="10" y="32" transform="skewY(-20)" x="5"/>
+<rect width="45" height="10" transform="scale(1,-1) skewY(-20)" y="-6" x="50"/>
+<rect x="5" y="35" width="10" height="65"/>
+<rect x="85" y="35" width="10" height="65"/>
+<rect x="11" y="30" width="75" height="10"/>
+<rect x="32" y="22" width="35" height="10"/>
+<rect x="17" y="42" width="66" height="10"/>
+</g>
+<g id="svg_f_door" visibility="hidden">
+<rect x="17" y="54" width="66" height="10"/>
+<rect x="17" y="66" width="66" height="10"/>
+<rect x="17" y="78" width="66" height="10"/>
+<rect x="17" y="90" width="66" height="10"/>
+</g>
+</svg>
+<svg id="svg_s_garage" viewBox="0 0 190 120">
+<g id="svg_s_door_closed">
+<rect x="113" y="5" width="70" height="15" rx="5"/>
+<rect x="169" y="5" width="15" height="110" rx="5"/>
+</g>
+<g id="svg_s_door_open" visibility="hidden">
+<rect x="33" y="5" width="150" height="15" rx="5"/>
+<rect x="169" y="5" width="15" height="30" rx="5"/>
+</g>
+<path id="svg_s_vehicle" d="M26.706 37.724c-3.539 1.92-5.46 4.868-13.5 20.877L4.573 75.569l-.221 12.172c-.296 15.27-.296 15.341 8.118 16.006l5.681.442.882 2.656c1.328 4.058 2.805 5.83 6.417 8.042 6.862 3.984 15.861 1.548 19.182-5.166.81-1.772 1.696-3.76 1.92-4.498.367-1.182 2.282-1.252 26.26-1.252 23.972 0 25.892.07 26.26 1.327 2.656 8.996 10.107 13.349 18.516 10.839 4.425-1.323 7.816-4.72 9.144-9.219l.889-2.947 7.447-.077c4.135 0 8.634-.367 10.034-.883 3.984-1.404 4.501-3.174 4.205-14.903-.221-11.211-.957-13.796-4.205-15.492-1.033-.514-8.704-2.507-16.963-4.351-8.337-1.92-15.199-3.689-15.344-3.984-.078-.296-3.616-5.829-7.746-12.32-4.796-7.449-8.486-12.393-10.032-13.424l-2.509-1.697H60.344c-22.057.072-32.607.295-33.638.884zm29.136 17.189v9.959H38.506h-17.26l4.057-8.704c2.216-4.723 4.723-9.224 5.531-9.96 1.328-1.108 3.174-1.256 13.28-1.256h11.728v9.961zM89.628 46.8c1.181.956 4.352 5.456 7.008 9.956l4.868 8.116H83.137h-18.44v-9.959-9.961h11.36c10.993 0 11.432.077 13.571 1.848zM36.146 95.929c2.141.957 4.205 4.276 4.205 6.714 0 2.8-2.581 6.266-5.383 7.152-6.271 2.068-12.246-4.72-9.295-10.473 1.993-3.838 6.417-5.24 10.473-3.393zm82.474 1.325c1.621 1.699 2.142 2.88 2.142 5.164 0 8.263-10.845 10.695-14.383 3.249-1.554-3.174-.961-5.61 1.841-8.413 2.949-3.024 7.377-3.024 10.4 0z"/>
+</svg>
+</defs>
+<use id="svg_view_toggle" href="#svg_s_garage"/>
+</svg>
+</td>
 </tr><tr><td><b><label id='lbl_vstatus1'>Vehicle:</label></b></td>
 <td><label id='lbl_vstatus'>-</label></td></tr>
 <tr><td><b>Distance:</b></td><td><label id='lbl_dist'>-</label></td><td></td></tr>
@@ -266,18 +304,39 @@ timeout:5000,
 success:function(jd){
 $('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 $('#lbl_dist').text(jd.dist +' (cm)').css('color', jd.dist==450?'red':'black');
-$('#lbl_status').text(jd.door?'OPEN':'CLOSED').css('color',jd.door?'red':'green'); 
+$('#lbl_status').text(jd.door?'OPEN':'CLOSED').css('color',jd.door?'red':'green');
 if (jd.vehicle >=2){
 $('#lbl_vstatus1').hide();
 $('#lbl_vstatus').text('');
 }else {
-$('#lbl_vstatus1').show()
-$('#lbl_vstatus').text(jd.vehicle & !jd.door?'Present':(!jd.vehicle & !jd.door?'Absent':''));
+$('#lbl_vstatus1').show();
+$('#lbl_vstatus').text(jd.vehicle?'Present':'Absent');
 }
-if (jd.vehicle>=3){
-$('#pic').attr('src', (jd.door?'https://github.com/OpenGarage/OpenGarage-Firmware/raw/master/icons/DoorOpen.png':'https://github.com/OpenGarage/OpenGarage-Firmware/raw/master/icons/DoorShut.png'));
-}else{
-$('#pic').attr('src', jd.door?'https://github.com/OpenGarage/OpenGarage-Firmware/raw/master/icons/Open.png':(jd.vehicle?'https://github.com/OpenGarage/OpenGarage-Firmware/raw/master/icons/ClosedPresent.png':'https://github.com/OpenGarage/OpenGarage-Firmware/raw/master/icons/ClosedAbsent.png'));
+var svg_garage = $("#svg_view_toggle");
+if (jd.vehicle>=3) {
+svg_garage.attr('href', '#svg_f_garage');
+var svg_garage = $('#svg_f_garage');
+var svg_door = $('#svg_f_door');
+if(jd.door){
+svg_garage.attr('fill', 'red');
+svg_door.attr('visibility', 'hidden');
+} else {
+svg_garage.attr('fill', 'green');
+svg_door.attr('visibility', 'visible');
+}
+} else {
+svg_garage.attr('href', '#svg_s_garage');
+var svg_door_open = $('#svg_s_door_open');
+var svg_door_closed = $('#svg_s_door_closed');
+if(jd.door) {
+svg_door_open.attr('visibility', 'visible');
+svg_door_closed.attr('visibility', 'hidden');
+} else {
+svg_door_open.attr('visibility', 'hidden');
+svg_door_closed.attr('visibility', 'visible');
+}
+var v_opacity = jd.vehicle == 0 ? 0 : jd.vehicle == 1 ? 100 : 10;
+$('#svg_s_vehicle').attr({'fill-opacity': v_opacity +'%', 'stroke-opacity': v_opacity});
 }
 if(typeof(jd.sn2)!='undefined') {$('#tbl_sn2').show(); $('#lbl_sn2').text(jd.sn2?'High':'Low');}
 else {$('#tbl_sn2').hide();}
@@ -299,7 +358,7 @@ $('#lbl_cld').text('disconnected');
 }
 </script>
 </body>
-)";
+)#";
 const char sta_logs_html[] PROGMEM = R"(<head>
 <title>OpenGarage</title>
 <meta name='viewport' content='width=device-width, initial-scale=1'>
@@ -309,7 +368,7 @@ const char sta_logs_html[] PROGMEM = R"(<head>
 </head>
 <body>
 <div data-role='page' id='page_log'>
-<div data-role='header'><h3><label id='lbl_name'></label> Log</h3></div>    
+<div data-role='header'><h3><label id='lbl_name'></label> Log</h3></div>
 <div data-role='content'>
 <p>Below are the most recent <label id='lbl_nr'></label> records</p>
 <p>Current time is <label id='lbl_time'></label></p>
@@ -482,7 +541,7 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 <tr class='si'><td><b>DNS1:</b></td><td><input type='text' size=15 maxlength=64 id='dns1' data-mini='true'></td></tr>
 <tr><td colspan=2><input type='checkbox' id='cb_key' data-mini='true' onclick='update_ckey()'><label for='cb_key'>Change Device Key</label></td></tr>
 <tr class='ckey'><td><b>New Key:</b></td><td><input type='password' size=16 maxlength=64 id='nkey' data-mini='true'></td></tr>
-<tr class='ckey'><td><b>Confirm:</b></td><td><input type='password' size=16 maxlength=64 id='ckey' data-mini='true'></td></tr>      
+<tr class='ckey'><td><b>Confirm:</b></td><td><input type='password' size=16 maxlength=64 id='ckey' data-mini='true'></td></tr>
 </table>
 </div>
 <br />
@@ -492,7 +551,7 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 </table>
 <div data-role='controlgroup' data-type='horizontal'>
 <a href='#' data-role='button' data-inline='true' data-theme='a' id='btn_back'>Back</a>
-<a href='#' data-role='button' data-inline='true' data-theme='b' id='btn_submit'>Submit</a> 
+<a href='#' data-role='button' data-inline='true' data-theme='b' id='btn_submit'>Submit</a>
 </div>
 </div>
 <div data-role='footer' data-theme='c'>
@@ -504,7 +563,7 @@ let prev_ct=1;
 function clear_msg() {$('#msg').text('');}
 function update_sno(){
 if(parseInt($('#sn2 option:selected').val())>0){
-$('#sno').selectmenu('enable'); 
+$('#sno').selectmenu('enable');
 }else{$('#sno').selectmenu('disable');}
 }
 function update_cld(){
@@ -675,7 +734,7 @@ const char sta_update_html[] PROGMEM = R"(<head>
 <tr><td><b>Device key: </b><input type='password' name='dkey' size=16 maxlength=64 id='dkey'></td></tr>
 <tr><td><label id='msg'></label></td></tr>
 </table>
-<div data-role='controlgroup' data-type='horizontal'>    
+<div data-role='controlgroup' data-type='horizontal'>
 <a href='#' data-role='button' data-inline='true' data-theme='a' id='btn_back'>Back</a>
 <a href='#' data-role='button' data-inline='true' data-theme='b' id='btn_submit'>Submit</a>
 </div>
