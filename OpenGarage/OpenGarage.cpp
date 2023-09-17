@@ -332,6 +332,10 @@ void OpenGarage::init_sensors() {
 		am2320 = new AM2320();
 		am2320->begin();
 		break;
+	case OG_TSN_AM2320_B:
+		am2320 = new AM2320();
+		am2320->begin(PIN_BUTTON, PIN_TH);
+		break;
 	case OG_TSN_DHT11:
 		dht = new DHTesp();
 		dht->setup(PIN_TH, DHTesp::DHT11);
@@ -340,7 +344,6 @@ void OpenGarage::init_sensors() {
 		dht = new DHTesp();
 		dht->setup(PIN_TH, DHTesp::DHT22);    
 		break;
-
 	case OG_TSN_DS18B20:
 		OneWire *oneWire = new OneWire(PIN_TH);
 		ds18b20 = new DallasTemperature(oneWire);
@@ -353,6 +356,7 @@ void OpenGarage::read_TH_sensor(float& C, float& H) {
 	float v;
 	switch(options[OPTION_TSN].ival) {
 	case OG_TSN_AM2320:
+	case OG_TSN_AM2320_B:
 		if(am2320) {
 			if(am2320->measure()) {
 				v = am2320->getTemperature();
@@ -360,6 +364,15 @@ void OpenGarage::read_TH_sensor(float& C, float& H) {
 				v = am2320->getHumidity();
 				if(!isnan(v)) H=v;
 			}
+			#if defined(SERIAL_DEBUG)
+			else {  // error has occured
+				int errorCode = am2320->getErrorCode();
+				switch (errorCode) {
+					case 1: DEBUG_PRINTLN(F("AM2320 ERR: Sensor is offline")); break;
+					case 2: DEBUG_PRINTLN(F("AM2320 ERR: CRC validation failed.")); break;
+				}    
+			}
+			#endif
 		}
 		break;
 	case OG_TSN_DHT11:
