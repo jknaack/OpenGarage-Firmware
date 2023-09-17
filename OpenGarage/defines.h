@@ -86,6 +86,7 @@
 #define OG_TSN_DHT11    0x02
 #define OG_TSN_DHT22    0x03
 #define OG_TSN_DS18B20  0x04
+#define OG_TSN_AM2320_B 0x05
 
 #define OG_MOD_AP       0xA9
 #define OG_MOD_STA      0x2A
