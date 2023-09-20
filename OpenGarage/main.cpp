@@ -270,6 +270,8 @@ void sta_controller_fill_json(String& json, bool fullversion=true) {
 			else if(cld==CLD_OTC) json += (otf->getCloudStatus());
 			else json += "0";
 		}
+		json += F(",\"dclm\":");
+		json += og.options[OPTION_DCLM].ival;
 	}
 	if(og.options[OPTION_TSN].ival) {
 		json += F(",\"temp\":");
@@ -447,13 +449,19 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 			if(sval != NULL) {
 				ival = String(sval).toInt();
 			}
-			if(ival == 0 || ival > 99){
+//TODO: change the rules below.  0 and 100% should be fine
+			if(ival < 0 || ival > 100){
 				otf_send_result(res, HTML_DATA_OUTOFBOUND, "double-click");
 				ival = 0;
 			}
 			else{
-				// convert ival percent to a time in milliseconds
-				ival = (uint)((ival * og.options[OPTION_OSPD].ival) / 100.0);
+				if(ival == 0 || ival == 100){
+
+				}
+				else{
+					// convert ival percent to a time in milliseconds
+					ival = (uint)((ival * og.options[OPTION_OSPD].ival) / 100.0);
+				}
 			}
 		}
 		else{
@@ -470,7 +478,7 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 				og.double_click_relay(ival);
 			} else {
 				// else, set alarm
-				og.set_alarm(0, 1);
+				og.set_alarm(0, ival);
 			}
 		}
 		else if(ival == 0){
@@ -820,7 +828,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 						og.double_click_relay(ival);
 					} else {
 						// else, set alarm
-						og.set_alarm(0, 1);
+						og.set_alarm(0, ival);
 					}
 				}
 				else{
@@ -1449,14 +1457,7 @@ void process_alarm() {
 		og.alarm--;
 		if(og.alarm==0) {
 			og.play_note(0);
-			if(og.double_click_alarm_delay!=0){
-				uint double_click_delay = og.double_click_alarm_delay;
-				og.reset_double_click_alarm_delay();
-				og.double_click_relay(double_click_delay);
-			}
-			else{
-				og.click_relay();
-			}
+			og.finish_alarm_click_relay();
 		}
 	}
 }

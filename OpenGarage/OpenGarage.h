@@ -48,12 +48,17 @@ struct LogStruct {
 };
 
 class OpenGarage {
+
 public:
 	static OptionStruct options[];
 	static byte state;
 	static byte alarm;
-	static byte double_click_alarm_delay;
 	static byte led_reverse;
+	static ulong previous_millis;
+	static Ticker relay_ticker;
+	static int double_click_delay_ms;
+	static int alarm_double_click_delay_ms;
+
 	static void begin();
 	static void options_setup();
 	static void options_load();
@@ -69,15 +74,33 @@ public:
 	static byte get_led()    { return led_reverse?(!digitalRead(PIN_LED)):digitalRead(PIN_LED); }
 	static void set_led(byte status)   { digitalWrite(PIN_LED, led_reverse?(!status):status); }
 	static void set_relay(byte status) { digitalWrite(PIN_RELAY, status); }
-	static void click_relay() {
-		set_relay(HIGH);
-		delay(options[OPTION_CDT].ival);
-		set_relay(LOW);
+
+	static bool click_relay() {
+		// don't allow a click if we are already in the middle of one, unless it's the second click of a double-click
+		if(previous_millis != 0){
+			DEBUG_PRINT(F("Relay already open: "));
+			DEBUG_PRINT(previous_millis);
+			DEBUG_PRINT(F(", "));
+			DEBUG_PRINTLN(double_click_delay_ms);
+			return false;
+		}
+		unguarded_click_relay();
+		return true;
 	}
-	static void double_click_relay(uint double_click_delay) {
-		click_relay();
-		delay(double_click_delay - options[OPTION_CDT].ival);
-		click_relay();
+
+	static bool double_click_relay(uint double_click_delay) {
+		DEBUG_PRINT(F("Start Double-Click: "));
+		DEBUG_PRINTLN(double_click_delay);
+		// total double-click activity time is: click delay + double click delay + click delay
+		// We don't know exactly when the garage starts opening, so let's assume it's halfway through the first click delay
+		uint temp = double_click_delay - options[OPTION_CDT].ival/2;
+		if(temp > double_click_delay){ // temp is a uint, so if it's bigger than double-click-delay, it's because we went negative
+			DEBUG_PRINT(F("Double-Click Time Error: "));
+			DEBUG_PRINTLN(temp);
+			return false;
+		}
+		double_click_delay_ms = temp;
+		return click_relay();
 	}
 	static int find_option(String name);
 	static void log_reset();
@@ -86,13 +109,21 @@ public:
 	static bool read_log_next(LogStruct& data);
 	static bool read_log_end();
 	static void play_note(uint freq);
-	static void set_alarm(byte ov=0, byte double_click_alarm_delay=0) { // ov = override value
+	
+	static void set_alarm(byte ov=0, uint alarm_double_click_delay_ms=-1) { // ov = override value
 		if(ov) alarm = ov*10+1;
 		else alarm = options[OPTION_ALM].ival * 10 + 1;
-		OpenGarage::double_click_alarm_delay = double_click_alarm_delay;
+		OpenGarage::alarm_double_click_delay_ms = alarm_double_click_delay_ms;
 	}
-	static void reset_alarm() { alarm = 0; }
-	static void reset_double_click_alarm_delay() { double_click_alarm_delay = 0; }
+	
+	static void finish_alarm_click_relay() {
+		if(OpenGarage::alarm_double_click_delay_ms != -1){
+			double_click_relay(OpenGarage::alarm_double_click_delay_ms);
+		} else{
+			click_relay();
+		}
+	}
+
 	static void reset_to_ap() {
 		options[OPTION_MOD].ival = OG_MOD_AP;
 		options_save();
@@ -100,10 +131,33 @@ public:
 	}
 	static void config_ip();
 	static void play_startup_tune();
-	private:
+
+private:
 	static File log_file;
 	static void button_handler();
 	static void led_handler();
+
+	static void unguarded_click_relay() {
+		previous_millis = millis();
+		set_relay(HIGH);
+		relay_ticker.once_ms(options[OPTION_CDT].ival, finish_relay);
+	}
+
+	static void finish_relay(){
+		set_relay(LOW);
+		if(double_click_delay_ms < 0){
+			previous_millis = 0;
+		}
+		else{
+			DEBUG_PRINT(F("Finish Double-Click: "));
+			DEBUG_PRINT(double_click_delay_ms);
+			DEBUG_PRINT(F(", "));
+			DEBUG_PRINTLN(previous_millis);
+			uint temp = double_click_delay_ms;
+			double_click_delay_ms = -1;
+			relay_ticker.once_ms(temp, unguarded_click_relay);
+		}
+	}
 
 	static DallasTemperature *ds18b20;
 	static AM2320* am2320;

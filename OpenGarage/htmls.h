@@ -228,6 +228,11 @@ const char sta_home_html[] PROGMEM = R"#(<head><title>OpenGarage</title><meta na
 <button data-theme='b' id='btn_opts'>Options</button>
 <button data-theme='b' id='btn_log'>Show Log</button>
 </div>
+<style>.dbl_click_disabled{ display: flex; gap:5px; align-items: center; display: none}.dbl_click_enabled{ display: flex; gap:5px; align-items: center}</style>
+<div id="dbl_click_group" class="dbl_click_disabled">
+<button id="btn_dbl_click" data-theme="b" data-dbl-click-mode="0">Open Partially</button>
+<div id="dbl_click_input_group" class="dbl_click_disabled"><input id="val_dbl_click" type="number" data-theme="b" maxlength="5"/><label id="unit_dbl_click">seconds</label></div>
+</div>
 <span style='display:block;height:5px'></span>
 <div data-role='controlgroup' data-type='horizontal'>
 <button data-theme='c' id='btn_rbt'>Reboot</button>
@@ -296,6 +301,22 @@ var err = error;
 $('#msg').text('Request Failed: ' + err).css('color','red');
 });
 });
+$('#btn_dbl_click').click(function(e) {
+var dclm=$("#btn_dbl_click").data('data-dbl-click-mode');
+var val=1;
+switch(dclm){case 0:return;case 1:break;default:{val=$("#val_dbl_click").val();if(!val)return;}}
+var comm = 'cc?double-click='+val+'&dkey='+encodeURIComponent($('#dkey').val());
+$.getJSON(comm)
+.done(function( jd ) {
+if(jd.result!=1) {
+show_msg('Check device key and try again.',2000,'red');
+}else{clear_msg();};
+})
+.fail(function( jqxhr, textStatus, error ) {
+var err = error;
+$('#msg').text('Request Failed: ' + err).css('color','red');
+});
+});
 $(document).ready(function() { show(); si=setInterval('show()', 5000); });
 function show() {
 $.ajax({
@@ -350,6 +371,12 @@ $('#head_name').text(jd.name);
 $('#btn_click').html(jd.door?'Close Door':'Open Door').button('refresh');
 if(typeof(jd.temp)!='undefined') {$('#tbl_th').show(); $('#lbl_th').text(jd.temp.toFixed(1)+String.fromCharCode(176)+'C / '+(jd.temp*1.8+32).toFixed(1)+String.fromCharCode(176)+'F (H:'+jd.humid.toFixed(1)+'%)');}
 else {$('#tbl_th').hide();}
+$("#btn_dbl_click").data('data-dbl-click-mode',jd.dclm);
+if(jd.dclm != 0){
+$("#dbl_click_group").attr('class','dbl_click_enabled')
+if(jd.dclm > 1){$("#dbl_click_input_group").attr('class','dbl_click_enabled');$("#unit_dbl_click").text(jd.dclm==3?"%":"ms");}
+else{$("#dbl_click_input_group").attr('class','dbl_click_disabled')}
+}else{$("#dbl_click_group").attr('class','dbl_click_disabled');$("#dbl_click_input_group").attr('class','dbl_click_enabled')}
 },
 error:function(){
 $('#lbl_beat').text('(offline)').css('color','red');
@@ -561,13 +588,14 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 <input type='radio' name='rd_to' id='to_cap' value=1><label for='to_cap'>Cap</label>
 </fieldset>
 </td></tr>
-<tr><td><b>Door Open Speed (ms):</b><br><small>Used for Double-Click Percent estimation</small></td><td><input type='text' size=3 maxlength=5 id='ospd' data-mini='true' value=0 ></td></tr>
 <tr><td><b>Double-Click Mode:</b></td><td>
 <select name='dclm' id='dclm' data-mini='true'>
-<option value=0>Fixed</option>
-<option value=1>Seconds</option>
-<option value=2>Percent</option>
+<option value=0>Disabled</option>
+<option value=1>Fixed</option>
+<option value=2>Seconds</option>
+<option value=3>Percent</option>
 </select></td></tr>
+<tr><td><b>Door Open Speed (ms):</b><br><small>Used for Double-Click Percent Calculation</small></td><td><input type='text' size=3 maxlength=5 id='ospd' data-mini='true' value=0 ></td></tr>
 <tr><td><b>Double-Click Time (ms):</b><br><small>Only used if Mode=Fixed</small></td><td><input type='text' size=3 maxlength=5 id='dclv' data-mini='true' value=0 ></td></tr>
 <tr><td><b>HTTP Port:</b></td><td><input type='text' size=5 maxlength=5 id='htp' value=0 data-mini='true'></td></tr>
 <tr><td><b>Host Name:</b></td><td><input type='text' size=15 maxlength=32 id='host' data-mini='true' placeholder='(optional)'></td></tr>

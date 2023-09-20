@@ -25,8 +25,11 @@
 byte  OpenGarage::state = OG_STATE_INITIAL;
 File  OpenGarage::log_file;
 byte  OpenGarage::alarm = 0;
-byte  OpenGarage::double_click_alarm_delay = 0;
 byte  OpenGarage::led_reverse = 0;
+ulong OpenGarage::previous_millis = 0;
+Ticker OpenGarage::relay_ticker;
+int OpenGarage::double_click_delay_ms = -1;
+int  OpenGarage::alarm_double_click_delay_ms = -1;
 Ticker ud_ticker;
 
 static const char* config_fname = CONFIG_FNAME;
@@ -47,7 +50,7 @@ OptionStruct OpenGarage::options[] = {
 	{"sno", OG_SNO_1ONLY,  3, ""},
 	{"dth", 50,        65535, ""},
 	{"vth", 150,       65535, ""},
-	{"ospd", 5000, 65535, ""},
+	{"ospd", 10000, 65535, ""},
 	{"riv", 5,           300, ""},
 	{"alm", OG_ALM_5,      2, ""},
 	{"aoo", 0,             1, ""},
@@ -73,7 +76,7 @@ OptionStruct OpenGarage::options[] = {
 	{"auth", 0, 0, ""},
 	{"bdmn", 0, 0, DEFAULT_BLYNK_DMN},
 	{"bprt", DEFAULT_BLYNK_PRT,65535, ""},
-	{"dclm", DOUBLE_CLICK_MODE_FIXED, 2, ""},
+	{"dclm", DOUBLE_CLICK_MODE_FIXED, DOUBLE_CLICK_MODE_PERCENT, ""},
 	{"dclv", 0, 65535, ""},
 	{"dkey", 0, 0, DEFAULT_DKEY},
 	{"name", 0, 0, DEFAULT_NAME},
