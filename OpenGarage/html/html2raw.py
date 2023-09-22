@@ -1,18 +1,20 @@
-import os, sys, glob, argparse
+import os, glob, argparse
 
 default_output_file = "../htmls.h"
-
-def minimize_html(html_file, html_variable_name):
-    output = f'const char {html_variable_name}[] PROGMEM = R"('
+def convert_to_html_raw_string(html_file, html_variable_name):
+    prefix = '"('
+    suffix = ')"'
+    output = ''
     with open(html_file, "r") as in_file:
         for line in in_file:
             line = line.strip()
             if len(line) == 0:
                 continue
+            if suffix in line:
+                prefix = '"#('
+                suffix = ')#"'
             output += line + '\r\n'
-    output += ')";\r\n'
-
-    return output
+    return f'const char {html_variable_name}[] PROGMEM = R{prefix}{output}{suffix};\r\n'
 
 def generate_h(root_dir, outfile):
     html_files = glob.glob('*.html', root_dir=root_dir)
@@ -21,7 +23,7 @@ def generate_h(root_dir, outfile):
             split_file_name = os.path.splitext(html_file)
             html_variable_name = split_file_name[0] + "_html"
             print(html_file + ' => ' + html_variable_name)
-            min_html = minimize_html(html_file, html_variable_name)
+            min_html = convert_to_html_raw_string(html_file, html_variable_name)
             out.write(min_html.encode())
     print(f'{len(html_files)} files processed.')
 

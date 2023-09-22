@@ -69,9 +69,11 @@ extern bool fullbuffer;
 // this is one byte storing the door status histogram
 // maximum 8 bits
 static byte door_status_hist = 0;
+static ulong start_utc_time = 0;
 static ulong curr_utc_time = 0;
 static ulong curr_utc_hour= 0;
 static HTTPClient http;
+static bool light_blink_enabled = true;
 
 void do_setup();
 
@@ -320,7 +322,9 @@ void sta_logs_fill_json(String& json, OTF::Response &res) {
 	json = "";
 	json += F("{\"name\":\"");
 	json += og.options[OPTION_NAME].sval;
-	json += F("\",\"time\":");
+	json += F("\",\"starttime\":");
+	json += start_utc_time;
+	json += F(",\"time\":");
 	json += curr_utc_time;
 	json += F(",\"ncols\":");
 	json += og.options[OPTION_SN2].ival>OG_SN2_NONE ? 4 : 3;
@@ -651,6 +655,7 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 	if(ssid!=NULL&&strlen(ssid)!=0) {
 		og.options[OPTION_SSID].sval = ssid;
 		og.options[OPTION_PASS].sval = req.getQueryParameter("pass");
+		og.options[OPTION_HOST].sval = req.getQueryParameter("host");
 		// if cloud token is provided, save it
 		char *cld = req.getQueryParameter("cld");
 		char *auth = req.getQueryParameter("auth");
@@ -1111,8 +1116,10 @@ void check_status() {
 	static ulong checkstatus_timeout = 0;
 	static ulong checkstatus_report_timeout = 0; 
 	if((curr_utc_time > checkstatus_timeout) || (checkstatus_timeout == 0))  { //also check on first boot
-		og.set_led(HIGH);
-		aux_ticker.once_ms(25, og.set_led, (byte)LOW);
+		if(light_blink_enabled) {
+			og.set_led(HIGH);
+			aux_ticker.once_ms(OG_LIGHT_BLINK_TIME, og.set_led, (byte)LOW);
+		}
 		
 		// Read SN1 -- ultrasonic sensor
 		uint dth = og.options[OPTION_DTH].ival;
@@ -1164,7 +1171,19 @@ void check_status() {
 		
 		// get temperature readings
 		og.read_TH_sensor(tempC, humid);
-		read_cnt = (read_cnt+1)%100;    
+		
+		read_cnt = (read_cnt+1)%100;
+
+		// once the light is disabled, quit blinking until a restart or a reset to 0.
+		byte blink_limit = og.options[OPTION_BAS].ival;
+		bool current_light_blink_enabled = light_blink_enabled;
+		light_blink_enabled = blink_limit == OG_LIGHT_BLINK_FOREVER || (light_blink_enabled && read_cnt <= blink_limit);
+		
+		// do a long blink to notify that we are turning the light off
+		if(current_light_blink_enabled && !light_blink_enabled){
+			og.set_led(HIGH);
+			aux_ticker.once_ms(OG_LIGHT_BLINK_NOTIFY, og.set_led, (byte)LOW);
+		}
 		
 		if (checkstatus_timeout == 0){
 			DEBUG_PRINTLN(F("First time checking status don't trigger a status change, set full history to current value"));
@@ -1252,52 +1271,86 @@ void check_status() {
 }
 
 void time_keeping() {
-	static bool configured = false;
+	static byte ntp_state = OG_NTP_CONFIGURE;
 	static ulong prev_millis = 0;
-	static ulong time_keeping_timeout = 0;
+	static ulong next_retry_delay = TIME_SYNC_RETRY_DELAY;
+	static ulong state_transition_time = 0;
+	static uint state_transition_delay = 0;
 
-	if(!configured) {
-		if(valid_url(og.options[OPTION_NTP1].sval)) {
-			DEBUG_PRINT(F("NTP1:"));
-			DEBUG_PRINTLN(og.options[OPTION_NTP1].sval);
-			configTime(0, 0, og.options[OPTION_NTP1].sval.c_str(), DEFAULT_NTP1, DEFAULT_NTP2);
-		} else {
-			DEBUG_PRINT(F("NTP1:"));
-			DEBUG_PRINTLN(DEFAULT_NTP1);
-			configTime(0, 0, DEFAULT_NTP1, DEFAULT_NTP2, DEFAULT_NTP3);
-		}
-		configured = true;
-		delay(1000);
-	}
+	ulong current_millis = millis();
 
-	if(!curr_utc_time || (curr_utc_time > time_keeping_timeout)) {
-		ulong gt = 0;
-		ulong timeout = millis()+30000;
-		do {
-			gt = time(nullptr);
-			delay(2000);
-		} while(gt<1577836800UL && millis()<timeout);
-		if(gt<1577836800UL) {
-			// if we didn't get response, re-try after 2 seconds
-			DEBUG_PRINTLN(F("ntp invalid! re-try in 60 seconds"));
-			time_keeping_timeout = curr_utc_time + 60;
-		} else {
-			curr_utc_time = gt;
-			curr_utc_hour = (curr_utc_time % 86400)/3600;
-			DEBUG_PRINT(F("Updated time from NTP: "));
-			DEBUG_PRINT(curr_utc_time);
-			DEBUG_PRINT(" Hour: ");
-			DEBUG_PRINTLN(curr_utc_hour);
-			// if we got a response, re-try after TIME_SYNC_TIMEOUT seconds
-			time_keeping_timeout = curr_utc_time + TIME_SYNC_TIMEOUT;
-			prev_millis = millis();
-		}
-	}
-
-	while(millis() - prev_millis >= 1000) {
+	while(current_millis - prev_millis >= 1000) {
 		curr_utc_time ++;
 		curr_utc_hour = (curr_utc_time % 86400)/3600;
 		prev_millis += 1000;
+	}
+
+	if(current_millis - state_transition_time < state_transition_delay){
+		return;
+	}
+
+	state_transition_time = current_millis;
+	state_transition_delay = 0;
+
+	switch(ntp_state) {
+		case OG_NTP_CONFIGURE: {
+			String ntp_server = og.options[OPTION_NTP1].sval;
+			if(ntp_server == F("0.0.0.0")){
+				DEBUG_PRINTLN("Skipping NTP Configuration");
+				state_transition_delay = TIME_SYNC_REFRESH;
+				break;
+			}
+			DEBUG_PRINT(F("NTP1: "));
+			if(valid_url(ntp_server)) {
+				DEBUG_PRINTLN(ntp_server);
+				configTime(0, 0, ntp_server.c_str(), DEFAULT_NTP1, DEFAULT_NTP2);
+			} else {
+				DEBUG_PRINTLN(DEFAULT_NTP1);
+				configTime(0, 0, DEFAULT_NTP1, DEFAULT_NTP2, DEFAULT_NTP3);
+			}
+			DEBUG_PRINTLN(F("NTP Configured"));
+			ntp_state = OG_NTP_CALL_NTP;
+			state_transition_delay = TIME_SYNC_RETRY_DELAY;
+			break;
+		}
+		case OG_NTP_CALL_NTP: {
+			DEBUG_PRINTLN(F("Calling NTP Server"));
+			ulong gt = time(nullptr);
+			if(gt >= TIME_SYNC_ERROR_DATE){
+				curr_utc_time = gt;
+				curr_utc_hour = (curr_utc_time % 86400)/3600;
+				DEBUG_PRINT(F("Updated time from NTP: "));
+				DEBUG_PRINT(curr_utc_time);
+				DEBUG_PRINT(" Hour: ");
+				DEBUG_PRINTLN(curr_utc_hour);
+
+				prev_millis = current_millis;
+
+				if(!start_utc_time) {
+					start_utc_time = curr_utc_time - current_millis/1000;
+				}
+
+				// if we got a valid response, refresh NTP after TIME_SYNC_REFRESH milliseconds
+				ntp_state = OG_NTP_CALL_NTP;
+				state_transition_delay = TIME_SYNC_REFRESH;
+			} else {
+				ntp_state = OG_NTP_RETRY;
+			}
+			break;
+		}
+		case OG_NTP_RETRY: {
+				// ntp time failed, so retry using a backoff strategy up to the limit; once we hit (or exceed) the limit, restart the retry cycle
+				state_transition_delay = next_retry_delay;
+				next_retry_delay *= 2;
+				if(state_transition_delay >= TIME_SYNC_REFRESH){
+					state_transition_delay = TIME_SYNC_REFRESH;
+					next_retry_delay = TIME_SYNC_RETRY_DELAY;
+				}
+				ntp_state = OG_NTP_CALL_NTP;
+				DEBUG_PRINT(F("NTP Server Error, retry in: "));
+				DEBUG_PRINTLN(state_transition_delay);
+			break;
+		}
 	}
 }
 
@@ -1353,8 +1406,11 @@ void do_loop() {
 			led_blink_ms = LED_SLOW_BLINK;
 			DEBUG_PRINT(F("Attempting to connect to SSID: "));
 			DEBUG_PRINTLN(og.options[OPTION_SSID].sval.c_str());
-			WiFi.mode(WIFI_STA);
-			start_network_sta(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str());
+
+			String host = og.options[OPTION_HOST].sval;
+			const char* hostname = host.length() == 0 ? NULL : host.c_str(); // use the hostname provided if one is specified
+
+			start_network_sta(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), hostname);
 			og.config_ip();
 			og.state = OG_STATE_CONNECTING;
 			connecting_timeout = millis() + 60000;
@@ -1362,14 +1418,19 @@ void do_loop() {
 		break;
 
 	case OG_STATE_TRY_CONNECT:
-		led_blink_ms = LED_SLOW_BLINK;
-		DEBUG_PRINT(F("Attempting to connect to SSID: "));
-		DEBUG_PRINTLN(og.options[OPTION_SSID].sval.c_str());
-		start_network_sta_with_ap(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str());
-		og.config_ip();
-		og.state = OG_STATE_CONNECTED;
-		break;
-		
+		{
+			led_blink_ms = LED_SLOW_BLINK;
+			DEBUG_PRINT(F("Attempting to connect to SSID: "));
+			DEBUG_PRINTLN(og.options[OPTION_SSID].sval.c_str());
+
+			String host = og.options[OPTION_HOST].sval;
+			const char* hostname = host.length() == 0 ? NULL : host.c_str(); // use the hostname provided if one is specified
+
+			start_network_sta_with_ap(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), hostname);
+			og.config_ip();
+			og.state = OG_STATE_CONNECTED;
+			break;
+		}
 	case OG_STATE_CONNECTING:
 		if(WiFi.status() == WL_CONNECTED) {
 			DEBUG_PRINT(F("Wireless connected, IP: "));

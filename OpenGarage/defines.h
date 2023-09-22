@@ -24,7 +24,7 @@
 #define _DEFINES_H
 
 /** Firmware version, hardware version, and maximal values */
-#define OG_FWV     120 // Firmware version: 120 means 1.2.0
+#define OG_FWV     122 // Firmware version: 122 means 1.2.2
 
 /** GPIO pins */
 #define PIN_RELAY  15 // D8 on nodemcu
@@ -86,6 +86,7 @@
 #define OG_TSN_DHT11    0x02
 #define OG_TSN_DHT22    0x03
 #define OG_TSN_DS18B20  0x04
+#define OG_TSN_AM2320_B 0x05
 
 #define OG_MOD_AP       0xA9
 #define OG_MOD_STA      0x2A
@@ -107,6 +108,11 @@
 #define OG_STATE_TRY_CONNECT    3
 #define OG_STATE_WAIT_RESTART   4
 #define OG_STATE_RESET          9
+
+#define OG_LIGHT_BLINK_FOREVER  0
+#define OG_LIGHT_BLINK_MAX      99	// limited by rcnt to 99
+#define OG_LIGHT_BLINK_TIME		25
+#define OG_LIGHT_BLINK_NOTIFY	2000 // specifies how long the last blink should last before blinking turns off
 
 #define CLOUD_NONE  0
 #define CLOUD_BLYNK 1
@@ -161,6 +167,7 @@ typedef enum {
 	OPTION_ATIB,    // automation interval B (in hours)
 	OPTION_ATOB,    // automation options B
 	OPTION_NOTO,    // notification options
+	OPTION_BAS,     // blink count before turning the light off (0 means infinity)
 	OPTION_USI,     // use static IP
 	OPTION_SSID,    // wifi ssid
 	OPTION_PASS,    // wifi password
@@ -196,14 +203,19 @@ typedef enum {
 #define LED_FAST_BLINK  100
 #define LED_SLOW_BLINK  500
 
-#define TIME_SYNC_TIMEOUT 1800 //Issues connecting to MQTT can throw off the time function, sync more often
+#define OG_NTP_CONFIGURE      0            // ntp config state
+#define OG_NTP_CALL_NTP       1            // actual ntp call state and success handling
+#define OG_NTP_RETRY          2            // retry state, in case the call fails
+#define TIME_SYNC_RETRY_DELAY 1000         // delay time between failed NTP calls, will progressively increase using a backoff strategy up to TIME_SYNC_REFRESH limit
+#define TIME_SYNC_REFRESH     1800000      // Issues connecting to MQTT can throw off the time function, sync more often
+#define TIME_SYNC_ERROR_DATE  1577836800UL // 2020-01-01T00:00:00Z - Arbitrary, but reasonable date to confirm NTP is working
 
 #define TMP_BUFFER_SIZE 100
 
 /** Serial debug functions */
 //#define SERIAL_DEBUG
 
-#if defined(SERIAL_DEBUG)
+#if defined(SERIAL_DEBUG) || (OG_SERIAL_DEBUG)
 	#define DEBUG_PRINT(x)   Serial.print(x)
 	#define DEBUG_PRINTLN(x) Serial.println(x)
 #else
