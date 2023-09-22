@@ -1,3 +1,51 @@
+Fork of https://github.com/OpenGarage/OpenGarage-Firmware
+
+# Updates/Changes
+
+## New Features
+* Support for turning off the blinking light after N blinks (useful if you are in the garage often)
+    * Options -> Basic -> Blinks After Start (0 is always blink, default = 0)
+    * Useful if you are in the garage often and the light is distracting
+* Support for setting DHCP Host Name
+    * Options -> Advanced -> Host Name (existing field)
+    * The DHCP hostname that is sent to your router now the mDNS hostname, rather than the devicename.  This should mean that your router shows the correct device name instead of OG-ESP123. (Note: you may have to reboot your router to see the new name.)
+* Add Start Time and Uptime info to the Log Page
+* Improved support for isolated network environments (or no availalbe NTP server)
+    * Set Options -> Advanced -> NTP Server to **0.0.0.0** to disable NTP requests
+    * NTP Server request failures use a backoff strategy on retries to reduce unnecessary retry attempts
+    * Note: Running without an NTP Server may have side effects or cause certain features to stop working
+        * The clock will reset to 1970-01-01T00:00:00Z after every reboot.
+        * Log time will be incorrect.
+        * Door Automation: Closing at a certain hour will not work as the hour of the day will be unknown/wrong
+* Converted garage door status images on the home page to SVG and added an SVG favicon on the home page
+* Support for alternate AM2320 sensor wiring to allow for wiring the AM2320 and Garage Door Switch Sensors at the same time
+    * Options -> T/H Sensor -> AM2320 (I2C, Alternate Wiring) (SDA=0, SCL=5 wires)
+    * The regular wiring is still available as AM2320 (I2C) using GPOI Pins 4 (SDA) and 5 (SCL), but if you want to use the Garage Door Sensor we must move off of GPIO 4.  This wiring uses the Button pin, 0 (SDA) and 5 (SCL).  We can't read the temperature when the button is pressed, but that is most likely only used during setup, and the pin is unused otherwise.
+
+## Dev Enhancements
+* Python html2raw implementation to support html -> c++ raw string conversion (C++ binary doesn't work on Windows)
+    * Includes support for alternate C++ Raw String prefix in cases where the default prefix is in the html file somewhere
+* Platform IO Config Improvements
+    * Added a debug and release NodeMCUv2 config
+        * Added an OpenGarage specific debug definition so it can be turned on without turning on the OpenThings debug info
+    * Created a shared environment for common board info
+    * Created a default build config
+
+## Issues Fixed
+* Issue #71 - webapp car status not correct when door is open 
+* Issue #90 - Devices without internet access fail ~50% of API calls (w/ ESP8266/nodeMCU)
+
+## Library and Version Updates
+* Bump OpenGarage version to 1.2.2
+* Bump espressif8266 to 4.x
+* Bump of AM2320 Library (bug fixes)
+* Bump of OneWire Library (fixes compiler warning)
+* Bump of DHTesp (bug fixes + fixes compiler warning)
+* Bump of OpenThingsFramework (fixes debug compiler error on espressif8266 3.0.0+)
+* Bump of arduinoWebSockets (fixes compiler warning)
+
+**Note:** Most of these are only updated if building with Platform IO
+
 ## Firmware Compilation Instructions:
 
 There are three methods to compile the firmware. You can choose any of them.
