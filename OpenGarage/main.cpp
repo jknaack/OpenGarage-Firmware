@@ -69,6 +69,7 @@ extern bool fullbuffer;
 // this is one byte storing the door status histogram
 // maximum 8 bits
 static byte door_status_hist = 0;
+static ulong start_utc_time = 0;
 static ulong curr_utc_time = 0;
 static ulong curr_utc_hour= 0;
 static HTTPClient http;
@@ -82,7 +83,8 @@ void otf_send_html_P(OTF::Response &res, const __FlashStringHelper *content) {
 	res.writeHeader(F("Access-Control-Allow-Origin"), F("*")); // from esp8266 2.4 this has to be sent explicitly
 	res.writeHeader(F("Content-Length"), strlen_P((char *) content));
 	res.writeHeader(F("Connection"), F("close"));
-	res.writeBodyChunk((char *) "%s", content);
+	//res.writeBodyChunk((char *) "%s", content);
+	res.writeBodyData(content, strlen_P((char*)content));
 	DEBUG_PRINT(strlen_P((char *) content));
 	DEBUG_PRINTLN(F(" bytes sent."));
 }
@@ -93,7 +95,8 @@ void otf_send_json(OTF::Response &res, String json) {
 	res.writeHeader(F("Access-Control-Allow-Origin"), F("*")); // from esp8266 2.4 this has to be sent explicitly
 	res.writeHeader(F("Content-Length"), json.length());
 	res.writeHeader(F("Connection"), F("close"));
-	res.writeBodyChunk((char *) "%s",json.c_str());
+	//res.writeBodyChunk((char *) "%s",json.c_str());
+	res.writeBodyData(json.c_str(), json.length());
 }
 
 void otf_send_result(OTF::Response &res, byte code, const char *item = NULL) {
@@ -321,7 +324,9 @@ void sta_logs_fill_json(String& json, OTF::Response &res) {
 	json = "";
 	json += F("{\"name\":\"");
 	json += og.options[OPTION_NAME].sval;
-	json += F("\",\"time\":");
+	json += F("\",\"starttime\":");
+	json += start_utc_time;
+	json += F(",\"time\":");
 	json += curr_utc_time;
 	json += F(",\"ncols\":");
 	json += og.options[OPTION_SN2].ival>OG_SN2_NONE ? 4 : 3;
@@ -652,6 +657,7 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 	if(ssid!=NULL&&strlen(ssid)!=0) {
 		og.options[OPTION_SSID].sval = ssid;
 		og.options[OPTION_PASS].sval = req.getQueryParameter("pass");
+		og.options[OPTION_HOST].sval = req.getQueryParameter("host");
 		// if cloud token is provided, save it
 		char *cld = req.getQueryParameter("cld");
 		char *auth = req.getQueryParameter("auth");
@@ -986,38 +992,75 @@ bool mqtt_connect_subscribe() {
 	return false;
 }
 
+void blynkNotify(String s){
+	// Blynk notification
+	DEBUG_PRINTLN(F(" Sending blynk notification"));
+	Blynk.notify(s);
+}
+
+void iftttNotify(String s){
+	DEBUG_PRINTLN(" Sending IFTTT Notification");
+	http.begin(httpclient, "http://maker.ifttt.com/trigger/opengarage/with/key/"+og.options[OPTION_IFTT].sval);
+	http.addHeader("Content-Type", "application/json");
+	http.POST("{\"value1\":\""+s+"\"}");
+	String payload = http.getString();
+	http.end();
+	if(payload.indexOf("Congratulations") >= 0) {
+		DEBUG_PRINTLN(" Successfully updated IFTTT");
+	}else{
+		DEBUG_PRINT(" Error from IFTTT: ");
+		DEBUG_PRINTLN(payload);
+	}
+}
+
+void emailNotify(String s){
+	DEBUG_PRINTLN(" Sending EMail notification");
+	DEBUG_PRINTLN(GET_FREE_HEAP);
+	EMailSender::EMailMessage email_message;
+	email_message.subject = og.options[OPTION_NAME].sval.c_str();
+	email_message.message = s;
+	const char *email_host = og.options[OPTION_SMTP].sval.c_str();
+	const char *email_pword = og.options[OPTION_APWD].sval.c_str();
+	const char *email_sender = og.options[OPTION_SEND].sval.c_str();
+	const char *email_recip = og.options[OPTION_RECP].sval.c_str();
+	unsigned int email_port = og.options[OPTION_SPRT].ival;
+	if(email_host && email_pword && email_sender && email_recip){
+		EMailSender emailSend(email_sender, email_pword);
+		emailSend.setSMTPServer(email_host);
+		emailSend.setSMTPPort(email_port);
+		DEBUG_PRINTLN(GET_FREE_HEAP);
+		EMailSender::Response resp = emailSend.send(email_recip, email_message);
+	}
+}
+
+void mqttNotify(String s){
+	if (mqttclient.connected()) {
+		DEBUG_PRINTLN(" Sending MQTT Notification");
+		mqttclient.publish((mqtt_topic + "/OUT/NOTIFY").c_str(),s.c_str()); 
+	}
+}
+
 void perform_notify(String s) {
 	DEBUG_PRINT(F("Sending Notify to connected systems, value:"));
 	DEBUG_PRINTLN(s);
-	// Blynk notification
-	if(og.options[OPTION_CLD].ival==CLD_BLYNK && Blynk.connected()) {
-		DEBUG_PRINTLN(F(" Blynk Notify"));
-		Blynk.notify(s);
+
+	if(og.options[OPTION_CLD].ival==CLD_BLYNK && Blynk.connected()){
+		blynkNotify(s);
 	}
 
 	// IFTTT notification
 	if(og.options[OPTION_IFTT].sval.length()>7) { // key size is at least 8
-		DEBUG_PRINTLN(" Sending IFTTT Notification");
-		http.begin(httpclient, "http://maker.ifttt.com/trigger/opengarage/with/key/"+og.options[OPTION_IFTT].sval);
-		http.addHeader("Content-Type", "application/json");
-		http.POST("{\"value1\":\""+s+"\"}");
-		String payload = http.getString();
-		http.end();
-		if(payload.indexOf("Congratulations") >= 0) {
-			DEBUG_PRINTLN(" Successfully updated IFTTT");
-		}else{
-			DEBUG_PRINT(" Error from IFTTT: ");
-			DEBUG_PRINTLN(payload);
-		}
+		iftttNotify(s);
+	}
+
+	// Email notification
+	if(og.options[OPTION_EMEN].ival>0) {
+		emailNotify(s);
 	}
 
 	//Mqtt notification
-
 	if(og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval)) {
-		if (mqttclient.connected()) {
-		    DEBUG_PRINTLN(" Sending MQTT Notification");
-		    mqttclient.publish((mqtt_topic + "/OUT/NOTIFY").c_str(),s.c_str()); 
-		}
+		mqttNotify(s);
 	}
 }
 
@@ -1270,6 +1313,9 @@ void time_keeping() {
 	static bool configured = false;
 	static ulong prev_millis = 0;
 	static ulong time_keeping_timeout = 0;
+	static unsigned char failed_ntp_calls = 0;
+	const unsigned char MAX_FAILED_NTP_CALLS = 20;
+	const ulong NTP_VALID_TIME = 1577836800UL;
 
 	if(!configured) {
 		if(valid_url(og.options[OPTION_NTP1].sval)) {
@@ -1287,16 +1333,19 @@ void time_keeping() {
 
 	if(!curr_utc_time || (curr_utc_time > time_keeping_timeout)) {
 		ulong gt = 0;
-		ulong timeout = millis()+30000;
-		do {
-			gt = time(nullptr);
-			delay(2000);
-		} while(gt<1577836800UL && millis()<timeout);
-		if(gt<1577836800UL) {
-			// if we didn't get response, re-try after 2 seconds
-			DEBUG_PRINTLN(F("ntp invalid! re-try in 60 seconds"));
-			time_keeping_timeout = curr_utc_time + 60;
+		gt = time(nullptr);
+		if(gt<NTP_VALID_TIME) {
+			// we didn't get a valid response
+			if(failed_ntp_calls >= MAX_FAILED_NTP_CALLS) { // if already reached max failed calls
+				time_keeping_timeout = curr_utc_time + 60; // re-try after a minute
+				DEBUG_PRINTLN(F("max failed ntp reached! re-try in 60 seconds"));
+			} else {
+				failed_ntp_calls ++;
+				time_keeping_timeout = curr_utc_time + 2; // re-try after 2 seconds
+				DEBUG_PRINTLN(F("ntp invalid! re-try in 2 seconds"));
+			}
 		} else {
+			failed_ntp_calls = 0;
 			curr_utc_time = gt;
 			curr_utc_hour = (curr_utc_time % 86400)/3600;
 			DEBUG_PRINT(F("Updated time from NTP: "));
@@ -1306,6 +1355,9 @@ void time_keeping() {
 			// if we got a response, re-try after TIME_SYNC_TIMEOUT seconds
 			time_keeping_timeout = curr_utc_time + TIME_SYNC_TIMEOUT;
 			prev_millis = millis();
+			if(!start_utc_time) {
+				start_utc_time = curr_utc_time - millis()/1000;
+			}
 		}
 	}
 
@@ -1368,8 +1420,11 @@ void do_loop() {
 			led_blink_ms = LED_SLOW_BLINK;
 			DEBUG_PRINT(F("Attempting to connect to SSID: "));
 			DEBUG_PRINTLN(og.options[OPTION_SSID].sval.c_str());
-			WiFi.mode(WIFI_STA);
-			start_network_sta(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str());
+
+			String host = og.options[OPTION_HOST].sval;
+			const char* hostname = host.length() == 0 ? NULL : host.c_str(); // use the hostname provided if one is specified
+
+			start_network_sta(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), hostname);
 			og.config_ip();
 			og.state = OG_STATE_CONNECTING;
 			connecting_timeout = millis() + 60000;
@@ -1377,14 +1432,19 @@ void do_loop() {
 		break;
 
 	case OG_STATE_TRY_CONNECT:
-		led_blink_ms = LED_SLOW_BLINK;
-		DEBUG_PRINT(F("Attempting to connect to SSID: "));
-		DEBUG_PRINTLN(og.options[OPTION_SSID].sval.c_str());
-		start_network_sta_with_ap(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str());
-		og.config_ip();
-		og.state = OG_STATE_CONNECTED;
-		break;
-		
+		{
+			led_blink_ms = LED_SLOW_BLINK;
+			DEBUG_PRINT(F("Attempting to connect to SSID: "));
+			DEBUG_PRINTLN(og.options[OPTION_SSID].sval.c_str());
+
+			String host = og.options[OPTION_HOST].sval;
+			const char* hostname = host.length() == 0 ? NULL : host.c_str(); // use the hostname provided if one is specified
+
+			start_network_sta_with_ap(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), hostname);
+			og.config_ip();
+			og.state = OG_STATE_CONNECTED;
+			break;
+		}
 	case OG_STATE_CONNECTING:
 		if(WiFi.status() == WL_CONNECTED) {
 			DEBUG_PRINT(F("Wireless connected, IP: "));
@@ -1474,42 +1534,43 @@ void do_loop() {
 				restart_in(10000);
 			}
 			
-	} else {
-		if(WiFi.status() == WL_CONNECTED) {
-			MDNS.update();
-			time_keeping();
-			check_status(); //This checks the door, sends info to services and processes the automation rules
-			otf->loop();
-			updateServer->handleClient();
+		} else {
+			if(WiFi.status() == WL_CONNECTED) {
+				MDNS.update();
+				time_keeping();
+				check_status(); //This checks the door, sends info to services and processes the automation rules
+				otf->loop();
+				updateServer->handleClient();
 
-			if(og.options[OPTION_CLD].ival==CLD_BLYNK)
-			  Blynk.run();
+				if(og.options[OPTION_CLD].ival==CLD_BLYNK && Blynk.connected()) {
+					Blynk.run();
+				}
 
-			//Handle MQTT
-			if(og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval)) { // if enabled and mqtt server looks valid
-				if (!mqttclient.connected()) {
-					mqtt_id = get_ap_ssid();
-					mqtt_topic = og.options[OPTION_MQTP].sval;
-					if(mqtt_topic.length()==0) mqtt_topic = og.options[OPTION_NAME].sval;
-					mqttclient.setServer(og.options[OPTION_MQTT].sval.c_str(), og.options[OPTION_MQPT].ival);
-					mqttclient.setCallback(mqtt_callback); 		
-					mqtt_connect_subscribe();
+				//Handle MQTT
+				if(og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval)) { // if enabled and mqtt server looks valid
+					if (!mqttclient.connected()) {
+						mqtt_id = get_ap_ssid();
+						mqtt_topic = og.options[OPTION_MQTP].sval;
+						if(mqtt_topic.length()==0) mqtt_topic = og.options[OPTION_NAME].sval;
+						mqttclient.setServer(og.options[OPTION_MQTT].sval.c_str(), og.options[OPTION_MQPT].ival);
+						mqttclient.setCallback(mqtt_callback); 		
+						mqtt_connect_subscribe();
+						}
+						else {mqttclient.loop();} //Processes MQTT Pings/keep alives
 					}
-					else {mqttclient.loop();} //Processes MQTT Pings/keep alives
-				}
-				connecting_timeout = 0;
-			} else {
-				//og.state = OG_STATE_INITIAL;
-				if(!connecting_timeout) {
-					DEBUG_PRINTLN(F("State is CONNECTED but WiFi is disconnected, start timeout counter."));
-					connecting_timeout = millis()+60000;
-				}
-				else if(millis() > connecting_timeout) {
-					DEBUG_PRINTLN(F("timeout reached, reboot"));
-					og.restart();
+					connecting_timeout = 0;
+				} else {
+					//og.state = OG_STATE_INITIAL;
+					if(!connecting_timeout) {
+						DEBUG_PRINTLN(F("State is CONNECTED but WiFi is disconnected, start timeout counter."));
+						connecting_timeout = millis()+60000;
+					}
+					else if(millis() > connecting_timeout) {
+						DEBUG_PRINTLN(F("timeout reached, reboot"));
+						og.restart();
+					}
 				}
 			}
-		}
 		break;
 	}
 

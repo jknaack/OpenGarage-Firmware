@@ -30,6 +30,7 @@
 #include <DHTesp.h>
 #include <AM2320.h>
 #include <DallasTemperature.h>
+#include <EMailSender.h>
 
 #include "defines.h"
 

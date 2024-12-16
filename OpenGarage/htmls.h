@@ -20,6 +20,7 @@ input[type=password] {font-size: 12pt; height:28px;}
 <table>
 <tr><td><b>WiFi SSID</b>:</td><td><input type='text' id='ssid'></td></tr>
 <tr><td><b>WiFi Password</b>:</td><td><input type='password' id='pass'></td></tr>
+<tr><td><b>Host Name:</b></td><td><input type='text' size=15 maxlength=32 id='host' data-mini='true' placeholder='(optional)'></td></tr>
 </table>
 <br>
 <b>Enable Cloud Connection</b>?<br>
@@ -77,7 +78,7 @@ id('butt').innerHTML='Submit';
 dis_config(false);
 }
 };
-var comm='cc?ssid='+encodeURIComponent(id('ssid').value)+'&pass='+encodeURIComponent(id('pass').value);
+var comm='cc?ssid='+encodeURIComponent(id('ssid').value)+'&pass='+encodeURIComponent(id('pass').value)+'&host='+encodeURIComponent(id('host').value);
 if(eval_cb('otc')||eval_cb('blynk')){
 if(id('auth').value.length<32) {show_msg('Cloud token is too short!','red');return;}
 comm+='&cld='+(eval_cb('blynk')?'blynk':'otc');
@@ -198,7 +199,7 @@ const char sta_home_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta nam
 </div>
 </div>
 <div data-role='footer' data-theme='c'>
-<p>&nbsp; OpenGarage Firmware v<label id='fwv'>-</label><div data-role='controlgroup' data-type='horizontal'><a href='update' target='_top' data-role='button' data-inline=true data-mini=true>Firmware Update</a><a href='https://github.com/OpenGarage/OpenGarage-Firmware/tree/master/docs/fw1.2.0' target='_blank' data-role='button' data-inline=true data-mini=true>User Manual</a></p></div>
+<p>&nbsp; OpenGarage Firmware v<label id='fwv'>-</label><div data-role='controlgroup' data-type='horizontal'><a href='update' target='_top' data-role='button' data-inline=true data-mini=true>Firmware Update</a><a href='https://github.com/OpenGarage/OpenGarage-Firmware/tree/master/docs' target='_blank' data-role='button' data-inline=true data-mini=true>User Manual</a></p></div>
 </div>
 </div>
 <script>
@@ -311,8 +312,14 @@ const char sta_logs_html[] PROGMEM = R"(<head>
 <div data-role='page' id='page_log'>
 <div data-role='header'><h3><label id='lbl_name'></label> Log</h3></div>    
 <div data-role='content'>
-<p>Below are the most recent <label id='lbl_nr'></label> records</p>
-<p>Current time is <label id='lbl_time'></label></p>
+<div data-role='timegroup'>
+<table>
+<tr><td>Current Time:</td><td><strong><label id='lbl_time' /></strong></td></tr>
+<tr><td>Start Time:</td><td><strong><label id='lbl_start_time' /></strong></td></tr>
+<tr><td>Up Time:</td><td><strong><label id='lbl_up_time' /></strong></td></tr>
+</table>
+</div>
+<p>Below are the most recent <strong><label id='lbl_nr' /></strong> records</p>
 <div data-role="controlgroup" data-type="horizontal">
 <button data-theme="b" id="btn_back">Back</button>
 </div>
@@ -323,16 +330,35 @@ const char sta_logs_html[] PROGMEM = R"(<head>
 </div>
 <script>
 var curr_time = 0;
+var sdate = new Date();
 var date = new Date();
 $("#btn_back").click(function(){history.back();});
 $(document).ready(function(){
 show_log();
 setInterval(show_time, 1000);
 });
+function get_delta_time(date_now, date_future) {
+// from: https://stackoverflow.com/a/13904120
+// get total seconds between the times
+var delta = Math.abs(date_future - date_now) / 1000;
+// calculate (and subtract) whole days
+var days = Math.floor(delta / 86400);
+delta -= days * 86400;
+// calculate (and subtract) whole hours
+var hours = Math.floor(delta / 3600) % 24;
+delta -= hours * 3600;
+// calculate (and subtract) whole minutes
+var minutes = Math.floor(delta / 60) % 60;
+delta -= minutes * 60;
+// what's left is seconds
+var seconds = delta % 60;  // in theory the modulus is not required
+return days + ":" + String(hours).padStart(2, '0') + ":" + String(minutes).padStart(2, '0') + ":" + String(seconds).padStart(2, '0');
+}
 function show_time() {
 curr_time ++;
 date.setTime(curr_time*1000);
 $('#lbl_time').text(date.toLocaleString());
+$('#lbl_up_time').text(get_delta_time(date, sdate));
 }
 function show_log() {
 $.getJSON('jl', function(jd) {
@@ -342,6 +368,8 @@ $('#tab_log').find('tr:gt(0)').remove();
 var logs=jd.logs;
 logs.sort(function(a,b){return b[0]-a[0];});
 $('#lbl_nr').text(logs.length);
+sdate.setTime(jd.starttime*1000);
+$('#lbl_start_time').text(sdate.toLocaleString());
 var ldate = new Date();
 for(var i=0;i<logs.length;i++) {
 ldate.setTime(logs[i][0]*1000);
@@ -430,9 +458,9 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 <input type='radio' name='rd_ct' id='blynk' onclick='update_ct()' checked><label for='blynk'>Blynk</label>
 <input type='radio' name='rd_ct' id='otc' onclick='update_ct()'><label for='otc'>OTC</label>
 </fieldset>
-</td>
-<tr class='cld'><td><b>Cloud Token:</b></td><td><input type='text' size=20 maxlength=64 id='auth' data-mini='true'></td></tr>
-<tr class='cld'><td><b>Cloud Server:</b></td><td><input type='text' size=20 maxlength=64 id='bdmn' data-mini='true'></td></tr>
+</td></tr>
+<tr class='cld'><td><b>Cloud Token:</b></td><td><input type='text' size=22 maxlength=64 id='auth' data-mini='true'></td></tr>
+<tr class='cld'><td><b>Cloud Server:</b></td><td><input type='text' size=22 maxlength=64 id='bdmn' data-mini='true'></td></tr>
 <tr class='cld'><td><b>Cloud Port:</b></td><td><input type='text' size=5 maxlength=5 id='bprt' data-mini='true'></td></tr>
 <tr class='cld'><td colspan=2><hr></td></tr>
 <tr><td colspan=2><input type='checkbox' id='mqen' data-mini='true' onclick='update_mqtt()'><label for='mqen'>Enable MQTT</label></td></tr>
@@ -442,12 +470,18 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 <tr class='mqt'><td><b>MQTT Password:</b></td><td><input type='password' size=16 maxlength=64 id='mqpw' data-mini='true' placeholder='(unchanged if left blank)'></td></tr>
 <tr class='mqt'><td><b>MQTT Topic:</b></td><td><input type='text' size=16 maxlength=64 id='mqtp' data-mini='true' placeholder='(optional)'></td></tr>
 <tr class='mqt'><td colspan=2><hr></td></tr>
-<tr><td><b>IFTTT Key:</b></td><td><input type='text' size=20 maxlength=64 id='iftt' data-mini='true' placeholder='(optional)'></td></tr>
+<tr><td colspan=2><input type='checkbox' id='emen' data-mini='true' onclick='update_email()'><label for='emen'>Enable Email Notifications</label></td></tr>
+<tr class='email'><td><b>SMTP Server:</b></td><td><input type='text' size=16 maxlength=64 id='smtp' data-mini='true'></td></tr>
+<tr class='email'><td><b>SMTP Port:</b></td><td><input type='text' size=5 maxlength=5 id='sprt' data-mini='true'></td></tr>
+<tr class='email'><td><b>Sender Email:</b></td><td><input type='text' size=16 maxlength=64 id='send' data-mini='true'></td></tr>
+<tr class='email'><td><b>App Password:</b></td><td><input type='text' size=16 maxlength=64 id='apwd' data-mini='true'></td></tr>
+<tr class='email'><td><b>Recipient Email:</b></td><td><input type='text' size=16 maxlength=64 id='recp' data-mini='true'></td></tr>
+<tr height=30px><td colspan=2><b>Choose Notification Events:</b></td></tr>
+<tr><td><input type='checkbox' id='noto0' data-mini='true'><label for='noto0'>Door Open</label></td><td><input type='checkbox' id='noto1' data-mini='true' ><label for='noto1'>Door Close</label></td></tr>
+<tr><td><b>IFTTT Key:</b></td><td><input type='text' size=20 maxlength=64 id='iftt' data-mini='true' placeholder='(if using IFTTT notification)'></td></tr>
 </table>
 <table>
-<tr><td colspan=4><b>Choose Notifications:</b></td></tr>
-<tr><td><input type='checkbox' id='noto0' data-mini='true'><label for='noto0'>Door<br> Open</label></td><td><input type='checkbox' id='noto1' data-mini='true' ><label for='noto1'>Door<br> Close</label></td><td><input type='checkbox' id='noto2' data-mini='true' disabled><label for='noto2'>Vehicle<br> Leave</label></td><td><input type='checkbox' id='noto3' data-mini='true' disabled ><label for='noto3'>Vehicle<br> Arrive</label></td></tr>
-<tr><td colspan=4><hr></td></tr>
+<tr><td colspan=4><hr></td></tr>  
 <tr><td colspan=4><b>Automation:</b></td></tr>
 <tr><td colspan=4></td></tr><tr><td colspan=4></td></tr>
 <tr><td colspan=4>If open for longer than:</td></tr>
@@ -520,6 +554,10 @@ function update_mqtt(){
 if(eval_cb('#mqen')) $('.mqt').show();
 else $('.mqt').hide();
 }
+function update_email(){
+if(eval_cb('#emen')) $('.email').show();
+else $('.email').hide();
+}
 function update_sfi(){
 if(eval_cb('#sf_con')) $('#tbl_cmr').show();
 else $('#tbl_cmr').hide();
@@ -540,8 +578,8 @@ $('#div_basic').hide();
 $('#div_cloud').hide();
 $('#div_other').hide();
 if(eval_cb('#basic')) $('#div_basic').show();
-if(eval_cb('#cloud')) $('#div_cloud').show();
-if(eval_cb('#other')) $('#div_other').show();
+if(eval_cb('#cloud')) {$('#div_cloud').show(); update_cld(); update_mqtt(); update_email();}
+if(eval_cb('#other')) {$('#div_other').show(); update_usi();}
 }
 $('#btn_back').click(function(e){
 e.preventDefault(); goback();
@@ -578,6 +616,8 @@ bc('name',1);bc('auth',1);bc('bdmn',1);bc('iftt',1);
 bc('mqtt',1);bc('mqur',1);bc('mqtp',1);bc('mqpt');
 if($('#mqpw').val().length>0) bc('mqpw',1);
 comm+='&mqen='+(eval_cb('#mqen')?1:0);
+bc('smtp',1);bc('send',1);bc('apwd',1);bc('recp',1);bc('sprt');
+comm+='&emen='+(eval_cb('#emen')?1:0);
 bc('bprt');bc('ntp1',1);bc('host',1);
 if($('#cb_key').is(':checked')) {
 if(!$('#nkey').val()) {
@@ -646,6 +686,13 @@ if(jd.mqur) $('#mqur').val(jd.mqur);
 if(jd.mqtp) $('#mqtp').val(jd.mqtp);
 if(jd.mqpt) $('#mqpt').val(jd.mqpt);
 update_mqtt();
+if(jd.emen>0) cbt('emen');
+$('#smtp').val(jd.smtp);
+$('#sprt').val(jd.sprt);
+$('#send').val(jd.send);
+$('#apwd').val(jd.apwd);
+$('#recp').val(jd.recp);
+update_email();
 $('#dvip').val(jd.dvip);
 $('#gwip').val(jd.gwip);
 $('#subn').val(jd.subn);

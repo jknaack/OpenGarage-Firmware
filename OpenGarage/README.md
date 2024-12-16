@@ -8,7 +8,7 @@ Install Visual Studio Code (VS Code) (https://code.visualstudio.com/). Then laun
 ### Method 2: Use makeEspArduino and Makefile
 
 #### Step A: Install ESP8266 core and required libraries
-Follow https://github.com/plerup/makeEspArduino to install **ESP8266 core 2.7.4**. Then download or `git clone` the following libraries to a folder such as `$(HOME)/Arduino/libraries` (note the version of each library):
+Follow https://github.com/plerup/makeEspArduino to install **ESP8266 core 3.1.2**. Then download or `git clone` the following libraries to a folder such as `$(HOME)/Arduino/libraries` (note the version of each library):
 
 * Blynk library for Arduino (https://github.com/blynkkk/blynk-library) (v1.0.1)
 * MQTT PubSUbClient https://github.com/knolleary/pubsubclient (v2.8)
@@ -30,7 +30,7 @@ To compile the firmware code using makeESPArduino, simply run `make` in command 
 #### Step A: Install Arduino IDE, ESP8266 core, and required libraries
 
 * Install Arduino IDE (https://arduino.cc).
-* Launch Arduino IDE and install ESP8266 core 2.7.4 for Arduino (https://github.com/esp8266/Arduino/releases/tag/2.7.4)
+* Launch Arduino IDE and install ESP8266 core 1.3.2 for Arduino (https://github.com/esp8266/Arduino/releases/tag/3.1.2)
 * Install the libraries listed above.
 * Download this repository and extract the `OpenGarage` folder to your Arduino's `libraries` folder.
 

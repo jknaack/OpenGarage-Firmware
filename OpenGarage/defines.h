@@ -24,7 +24,7 @@
 #define _DEFINES_H
 
 /** Firmware version, hardware version, and maximal values */
-#define OG_FWV     122 // Firmware version: 122 means 1.2.2
+#define OG_FWV     123 // Firmware version: 123 means 1.2.3
 
 /** GPIO pins */
 #define PIN_RELAY  15 // D8 on nodemcu
@@ -33,9 +33,9 @@
 #define PIN_ECHO   14 // D5 on nodemcu
 #define PIN_LED     2
 #define PIN_RESET  16
-#define PIN_BUZZER 13
+#define PIN_BUZZER 13 // D7 on nodemcu
 #define PIN_SWITCH  4 // switch sensor: D2 on nodemcu
-#define PIN_TH      5 // temeprature sensor: D1 on nodemcu
+#define PIN_TH      5 // temperature sensor: D1 on nodemcu
 
 // Default device name
 #define DEFAULT_NAME    "My OpenGarage"
@@ -56,6 +56,9 @@
 #define DEFAULT_BLYNK_PRT  8080
 #define DEFAULT_OTC_DMN    "ws.cloud.openthings.io"
 #define DEFAULT_OTC_PRT    80
+
+#define DEFAULT_SMTP_SERVER "smtp.gmail.com"
+#define DEFAULT_SMTP_PORT   465
 
 #define OG_SN1_CEILING  0x00 // SN1 is built-in ultrasonic sensor
 #define OG_SN1_SIDE     0x01
@@ -183,6 +186,12 @@ typedef enum {
 	OPTION_MQUR,    // MQTT user name (optional)
 	OPTION_MQPW,    // MQTT password (optional)
 	OPTION_MQTP,    // MQTT topic (optional)
+	OPTION_EMEN,	// Email enable
+	OPTION_SMTP,	// SMTP Server
+	OPTION_SPRT,	// SMTP Port
+	OPTION_SEND,	// Sender Email
+	OPTION_APWD,	// SMTP App Password
+	OPTION_RECP,	// Recipient Email
 	OPTION_DVIP,    // device IP
 	OPTION_GWIP,    // gateway IP
 	OPTION_SUBN,    // subnet
@@ -202,7 +211,7 @@ typedef enum {
 #define LED_FAST_BLINK  100
 #define LED_SLOW_BLINK  500
 
-#define TIME_SYNC_TIMEOUT 1800 //Issues connecting to MQTT can throw off the time function, sync more often
+#define TIME_SYNC_TIMEOUT 3600 //Issues connecting to MQTT can throw off the time function, sync more often
 
 #define TMP_BUFFER_SIZE 100
 

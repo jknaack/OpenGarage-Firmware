@@ -68,9 +68,9 @@
 <input type='radio' name='rd_ct' id='blynk' onclick='update_ct()' checked><label for='blynk'>Blynk</label>
 <input type='radio' name='rd_ct' id='otc' onclick='update_ct()'><label for='otc'>OTC</label>
 </fieldset>
-</td>
-<tr class='cld'><td><b>Cloud Token:</b></td><td><input type='text' size=20 maxlength=64 id='auth' data-mini='true'></td></tr>
-<tr class='cld'><td><b>Cloud Server:</b></td><td><input type='text' size=20 maxlength=64 id='bdmn' data-mini='true'></td></tr>
+</td></tr>
+<tr class='cld'><td><b>Cloud Token:</b></td><td><input type='text' size=22 maxlength=64 id='auth' data-mini='true'></td></tr>
+<tr class='cld'><td><b>Cloud Server:</b></td><td><input type='text' size=22 maxlength=64 id='bdmn' data-mini='true'></td></tr>
 <tr class='cld'><td><b>Cloud Port:</b></td><td><input type='text' size=5 maxlength=5 id='bprt' data-mini='true'></td></tr>
 <tr class='cld'><td colspan=2><hr></td></tr>
 <tr><td colspan=2><input type='checkbox' id='mqen' data-mini='true' onclick='update_mqtt()'><label for='mqen'>Enable MQTT</label></td></tr>
@@ -80,20 +80,26 @@
 <tr class='mqt'><td><b>MQTT Password:</b></td><td><input type='password' size=16 maxlength=64 id='mqpw' data-mini='true' placeholder='(unchanged if left blank)'></td></tr>
 <tr class='mqt'><td><b>MQTT Topic:</b></td><td><input type='text' size=16 maxlength=64 id='mqtp' data-mini='true' placeholder='(optional)'></td></tr>
 <tr class='mqt'><td colspan=2><hr></td></tr>
-<tr><td><b>IFTTT Key:</b></td><td><input type='text' size=20 maxlength=64 id='iftt' data-mini='true' placeholder='(optional)'></td></tr>
+<tr><td colspan=2><input type='checkbox' id='emen' data-mini='true' onclick='update_email()'><label for='emen'>Enable Email Notifications</label></td></tr>
+<tr class='email'><td><b>SMTP Server:</b></td><td><input type='text' size=16 maxlength=64 id='smtp' data-mini='true'></td></tr>
+<tr class='email'><td><b>SMTP Port:</b></td><td><input type='text' size=5 maxlength=5 id='sprt' data-mini='true'></td></tr>
+<tr class='email'><td><b>Sender Email:</b></td><td><input type='text' size=16 maxlength=64 id='send' data-mini='true'></td></tr>
+<tr class='email'><td><b>App Password:</b></td><td><input type='text' size=16 maxlength=64 id='apwd' data-mini='true'></td></tr>
+<tr class='email'><td><b>Recipient Email:</b></td><td><input type='text' size=16 maxlength=64 id='recp' data-mini='true'></td></tr>
+<tr height=30px><td colspan=2><b>Choose Notification Events:</b></td></tr>
+<tr><td><input type='checkbox' id='noto0' data-mini='true'><label for='noto0'>Door Open</label></td><td><input type='checkbox' id='noto1' data-mini='true' ><label for='noto1'>Door Close</label></td></tr>
+<tr><td><b>IFTTT Key:</b></td><td><input type='text' size=20 maxlength=64 id='iftt' data-mini='true' placeholder='(if using IFTTT notification)'></td></tr>
 </table>
 <table>
-  <tr><td colspan=4><b>Choose Notifications:</b></td></tr>
-  <tr><td><input type='checkbox' id='noto0' data-mini='true'><label for='noto0'>Door<br> Open</label></td><td><input type='checkbox' id='noto1' data-mini='true' ><label for='noto1'>Door<br> Close</label></td><td><input type='checkbox' id='noto2' data-mini='true' disabled><label for='noto2'>Vehicle<br> Leave</label></td><td><input type='checkbox' id='noto3' data-mini='true' disabled ><label for='noto3'>Vehicle<br> Arrive</label></td></tr>
- <tr><td colspan=4><hr></td></tr>
- <tr><td colspan=4><b>Automation:</b></td></tr>
- <tr><td colspan=4></td></tr><tr><td colspan=4></td></tr>
-  <tr><td colspan=4>If open for longer than:</td></tr>
-  <tr><td><input type='text' size=3 maxlength=3 id='ati' value=30 data-mini='true'></td><td>minutes:</td><td><input type='checkbox' id='ato0' data-mini='true'><label for='ato0'>Notify me</label></td><td><input type='checkbox' id='ato1' data-mini='true'><label for='ato1'>Auto-close</label></td></tr>
-  <tr><td colspan=4>If open after time:<small> (Use UTC 24hr format)</small>:</td></tr>
-  <tr><td><input type='text' size=3 maxlength=3 id='atib' value=3 data-mini='true'></td><td> UTC:</td><td><input type='checkbox' id='atob0' data-mini='true'><label for='atob0'>Notify me</label></td><td><input type='checkbox' id='atob1' data-mini='true'><label for='atob1'>Auto-close</label></td></tr>
+<tr><td colspan=4><hr></td></tr>  
+<tr><td colspan=4><b>Automation:</b></td></tr>
+<tr><td colspan=4></td></tr><tr><td colspan=4></td></tr>
+<tr><td colspan=4>If open for longer than:</td></tr>
+<tr><td><input type='text' size=3 maxlength=3 id='ati' value=30 data-mini='true'></td><td>minutes:</td><td><input type='checkbox' id='ato0' data-mini='true'><label for='ato0'>Notify me</label></td><td><input type='checkbox' id='ato1' data-mini='true'><label for='ato1'>Auto-close</label></td></tr>
+<tr><td colspan=4>If open after time:<small> (Use UTC 24hr format)</small>:</td></tr>
+<tr><td><input type='text' size=3 maxlength=3 id='atib' value=3 data-mini='true'></td><td> UTC:</td><td><input type='checkbox' id='atob0' data-mini='true'><label for='atob0'>Notify me</label></td><td><input type='checkbox' id='atob1' data-mini='true'><label for='atob1'>Auto-close</label></td></tr>
 </table><table>
-  </table>
+</table>
 </div>
 <div id='div_other' style='display:none;'>
 <table cellpadding=2>
@@ -158,6 +164,10 @@ function update_mqtt(){
 if(eval_cb('#mqen')) $('.mqt').show();
 else $('.mqt').hide();
 }
+function update_email(){
+if(eval_cb('#emen')) $('.email').show();
+else $('.email').hide();
+}
 function update_sfi(){
 if(eval_cb('#sf_con')) $('#tbl_cmr').show();
 else $('#tbl_cmr').hide();
@@ -178,8 +188,8 @@ $('#div_basic').hide();
 $('#div_cloud').hide();
 $('#div_other').hide();
 if(eval_cb('#basic')) $('#div_basic').show();
-if(eval_cb('#cloud')) $('#div_cloud').show();
-if(eval_cb('#other')) $('#div_other').show();
+if(eval_cb('#cloud')) {$('#div_cloud').show(); update_cld(); update_mqtt(); update_email();}
+if(eval_cb('#other')) {$('#div_other').show(); update_usi();}
 }
 $('#btn_back').click(function(e){
 e.preventDefault(); goback();
@@ -216,6 +226,8 @@ bc('name',1);bc('auth',1);bc('bdmn',1);bc('iftt',1);
 bc('mqtt',1);bc('mqur',1);bc('mqtp',1);bc('mqpt');
 if($('#mqpw').val().length>0) bc('mqpw',1);
 comm+='&mqen='+(eval_cb('#mqen')?1:0);
+bc('smtp',1);bc('send',1);bc('apwd',1);bc('recp',1);bc('sprt');
+comm+='&emen='+(eval_cb('#emen')?1:0);
 bc('bprt');bc('ntp1',1);bc('host',1);
 if($('#cb_key').is(':checked')) {
 if(!$('#nkey').val()) {
@@ -284,6 +296,13 @@ if(jd.mqur) $('#mqur').val(jd.mqur);
 if(jd.mqtp) $('#mqtp').val(jd.mqtp);
 if(jd.mqpt) $('#mqpt').val(jd.mqpt);
 update_mqtt();
+if(jd.emen>0) cbt('emen');
+$('#smtp').val(jd.smtp);
+$('#sprt').val(jd.sprt);
+$('#send').val(jd.send);
+$('#apwd').val(jd.apwd);
+$('#recp').val(jd.recp);
+update_email();
 $('#dvip').val(jd.dvip);
 $('#gwip').val(jd.gwip);
 $('#subn').val(jd.subn);
